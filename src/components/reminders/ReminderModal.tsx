@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Reminder, Pet, ReminderCategory, ReminderStatus } from '../../types'
 import { Modal } from '../common/Modal'
+import { todayStr } from '../../lib/date'
 import { Bell, Pill, Clock } from 'lucide-react'
 
 interface ReminderModalProps {
@@ -53,7 +54,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
       setPetId(pets[0]?.id || '')
       setTitle('')
       setCategory('Obat Cacing')
-      setDate(new Date().toISOString().split('T')[0])
+      setDate(todayStr())
       setTime('09:00')
       setDosageOrInstruction('')
       setNotes('')

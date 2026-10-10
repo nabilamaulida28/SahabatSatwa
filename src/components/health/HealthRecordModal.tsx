@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { HealthRecord, Pet } from '../../types'
 import { Modal } from '../common/Modal'
+import { todayStr } from '../../lib/date'
 import { ClipboardList, AlertCircle } from 'lucide-react'
 
 interface HealthRecordModalProps {
@@ -43,7 +44,7 @@ export const HealthRecordModal: React.FC<HealthRecordModalProps> = ({
       setNotes(recordToEdit.notes || '')
     } else {
       setPetId(pets[0]?.id || '')
-      setDate(new Date().toISOString().split('T')[0])
+      setDate(todayStr())
       setTitle('')
       setSymptoms('')
       setDiagnosis('')

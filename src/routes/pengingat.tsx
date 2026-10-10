@@ -5,6 +5,7 @@ import { ReminderItem } from '../components/reminders/ReminderItem'
 import { ReminderModal } from '../components/reminders/ReminderModal'
 import { ConfirmDialog } from '../components/common/ConfirmDialog'
 import { useToast } from '../components/common/Toast'
+import { NoPetsNotice } from '../components/common/NoPetsNotice'
 import { Reminder } from '../types'
 import { Bell, Plus, Search, AlertCircle, Clock, CheckCircle2 } from 'lucide-react'
 import { EmptyStateIllustration } from '../components/illustrations/EmptyStateIllustration'
@@ -117,12 +118,15 @@ function PengingatPage() {
             setReminderToEdit(null)
             setIsModalOpen(true)
           }}
-          className="px-5 py-2.5 rounded-xl bg-[#21845F] hover:bg-[#19694b] text-white font-bold text-xs sm:text-sm shadow-soft transition-all duration-150 flex items-center justify-center gap-2 hover:-translate-y-0.5 self-start sm:self-auto cursor-pointer"
+          disabled={pets.length === 0}
+          className="px-5 py-2.5 rounded-xl bg-[#21845F] hover:bg-[#19694b] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs sm:text-sm shadow-soft transition-all duration-150 flex items-center justify-center gap-2 hover:-translate-y-0.5 self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-4 h-4" />
-          <span>+ Tambah Pengingat</span>
+          <span>Tambah Pengingat</span>
         </button>
       </div>
+
+      {pets.length === 0 && <NoPetsNotice action="membuat pengingat" />}
 
       {/* Filter and search bar */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-[#E9E4DC] shadow-soft">

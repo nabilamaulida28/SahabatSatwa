@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { useSatwaStore } from '../../lib/storage'
 import { useToast } from '../common/Toast'
+import { ConfirmDialog } from '../common/ConfirmDialog'
 
 interface MobileMoreDrawerProps {
   isOpen: boolean
@@ -19,17 +20,29 @@ interface MobileMoreDrawerProps {
 }
 
 export const MobileMoreDrawer: React.FC<MobileMoreDrawerProps> = ({ isOpen, onClose }) => {
-  const { owner, resetAllData } = useSatwaStore()
+  const { resetAllData } = useSatwaStore()
   const { showToast } = useToast()
+  const [isResetOpen, setIsResetOpen] = React.useState(false)
 
-  if (!isOpen) return null
+  const resetDialog = (
+    <ConfirmDialog
+      isOpen={isResetOpen}
+      onClose={() => setIsResetOpen(false)}
+      onConfirm={() => {
+        resetAllData()
+        showToast('Data demo berhasil direset ke setelan awal!', 'info')
+      }}
+      title="Reset Data Demo?"
+      message="Semua data yang kamu tambahkan atau ubah akan dikembalikan ke data demo awal."
+      confirmText="Ya, Reset"
+    />
+  )
+
+  if (!isOpen) return resetDialog
 
   const handleReset = () => {
     onClose()
-    if (window.confirm('Kembalikan semua data ke setelan demo awal?')) {
-      resetAllData()
-      showToast('Data demo berhasil direset ke setelan awal!', 'info')
-    }
+    setIsResetOpen(true)
   }
 
   const MORE_ITEMS = [
@@ -68,6 +81,8 @@ export const MobileMoreDrawer: React.FC<MobileMoreDrawerProps> = ({ isOpen, onCl
   ]
 
   return (
+    <>
+    {resetDialog}
     <div className="fixed inset-0 z-50 lg:hidden flex flex-col justify-end">
       {/* Backdrop */}
       <div
@@ -134,5 +149,6 @@ export const MobileMoreDrawer: React.FC<MobileMoreDrawerProps> = ({ isOpen, onCl
         </div>
       </div>
     </div>
+    </>
   )
 }

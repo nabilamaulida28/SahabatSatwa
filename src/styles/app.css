@@ -70,3 +70,28 @@ html, body {
   box-shadow: 0 12px 28px -4px rgba(33, 132, 95, 0.12), 0 4px 12px -2px rgba(36, 49, 44, 0.05);
   transform: translateY(-2px);
 }
+
+/* ---------- Utilitas yang sebelumnya dipakai tapi belum didefinisikan ---------- */
+/* (kelas animate-in/fade-in/zoom-in-95/slide-in-* berasal dari plugin yang tidak ter-install) */
+@keyframes satwa-fade-in { from { opacity: 0 } to { opacity: 1 } }
+@keyframes satwa-zoom-in { from { opacity: 0; transform: scale(0.95) } to { opacity: 1; transform: scale(1) } }
+@keyframes satwa-slide-up { from { opacity: 0; transform: translateY(1.25rem) } to { opacity: 1; transform: translateY(0) } }
+
+.animate-in { animation-duration: 200ms; animation-timing-function: ease-out; animation-fill-mode: both; }
+.fade-in { animation-name: satwa-fade-in; }
+.zoom-in-95 { animation-name: satwa-zoom-in; }
+.slide-in-from-bottom, .slide-in-from-bottom-5 { animation-name: satwa-slide-up; }
+
+.scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }
+
+/* Aman untuk iPhone notch / gesture bar */
+.safe-bottom { padding-bottom: max(0.5rem, env(safe-area-inset-bottom)); }
+
+/* Fokus keyboard yang jelas (aksesibilitas) */
+:focus-visible { outline: 2px solid #21845F; outline-offset: 2px; }
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}

@@ -86,7 +86,7 @@ function DataHewanPage() {
           className="px-5 py-2.5 rounded-xl bg-[#21845F] hover:bg-[#19694b] text-white font-bold text-xs sm:text-sm shadow-soft transition-all duration-150 flex items-center justify-center gap-2 hover:-translate-y-0.5 self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-4 h-4" />
-          <span>+ Tambah Hewan</span>
+          <span>Tambah Hewan</span>
         </button>
       </div>
 

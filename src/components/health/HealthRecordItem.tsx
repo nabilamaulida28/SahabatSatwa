@@ -1,4 +1,5 @@
 import React from 'react'
+import { formatDate } from '../../lib/date'
 import { HealthRecord, Pet } from '../../types'
 import {
   ClipboardList,
@@ -47,7 +48,7 @@ export const HealthRecordItem: React.FC<HealthRecordItemProps> = ({
             <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-[#718078]">
               <div className="flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5 text-[#21845F]" />
-                <span>{record.date}</span>
+                <span>{formatDate(record.date)}</span>
               </div>
               {record.vetOrClinic && (
                 <div className="flex items-center gap-1 font-semibold text-[#21845F]">

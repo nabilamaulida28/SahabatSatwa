@@ -1,4 +1,5 @@
 import React from 'react'
+import { ageFromBirthDate } from '../../lib/date'
 import { Pet } from '../../types'
 import { Modal } from '../common/Modal'
 import { useSatwaStore } from '../../lib/storage'
@@ -96,7 +97,7 @@ export const PetDetailModal: React.FC<PetDetailModalProps> = ({
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="p-3 bg-white rounded-xl border border-[#E9E4DC] text-center shadow-2xs">
             <span className="text-[10px] font-bold text-[#718078] uppercase">Umur</span>
-            <p className="text-base font-extrabold text-[#24312C] mt-0.5">{pet.ageString}</p>
+            <p className="text-base font-extrabold text-[#24312C] mt-0.5">{ageFromBirthDate(pet.birthDate) || pet.ageString}</p>
           </div>
           <div className="p-3 bg-white rounded-xl border border-[#E9E4DC] text-center shadow-2xs">
             <span className="text-[10px] font-bold text-[#718078] uppercase">Berat Terkini</span>

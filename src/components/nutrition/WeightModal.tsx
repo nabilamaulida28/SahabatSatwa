@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { WeightRecord, Pet } from '../../types'
 import { Modal } from '../common/Modal'
+import { todayStr } from '../../lib/date'
 import { Scale } from 'lucide-react'
 
 interface WeightModalProps {
@@ -26,7 +27,7 @@ export const WeightModal: React.FC<WeightModalProps> = ({
 
   useEffect(() => {
     setPetId(defaultPetId || pets[0]?.id || '')
-    setDate(new Date().toISOString().split('T')[0])
+    setDate(todayStr())
     setWeight('')
     setNotes('')
     setErrors({})

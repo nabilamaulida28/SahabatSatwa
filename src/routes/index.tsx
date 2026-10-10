@@ -8,6 +8,8 @@ import { ScheduleModal } from '../components/schedules/ScheduleModal'
 import { PetDetailModal } from '../components/pets/PetDetailModal'
 import { PetModal } from '../components/pets/PetModal'
 import { useToast } from '../components/common/Toast'
+import { NoPetsNotice } from '../components/common/NoPetsNotice'
+import { relativeLabel, formatDate, greeting } from '../lib/date'
 import { CareSchedule, Pet } from '../types'
 import {
   PawPrint,
@@ -22,6 +24,7 @@ import {
   Stethoscope,
   ChevronRight,
   CheckCircle2,
+  AlertTriangle,
 } from 'lucide-react'
 
 export const Route = createFileRoute('/')({
@@ -30,6 +33,7 @@ export const Route = createFileRoute('/')({
 
 function DashboardPage() {
   const {
+    today,
     owner,
     pets,
     schedules,
@@ -61,7 +65,7 @@ function DashboardPage() {
   const petSummary = petSummaryParts.join(' · ') || 'Belum ada hewan terdaftar'
 
   // Today's schedules
-  const todayStr = '2026-10-10' // Reference demo current date
+  const todayStr = today
   const todaySchedules = schedules.filter((s) => s.date === todayStr)
   const todayVaksin = todaySchedules.filter((s) => s.category === 'Vaksin').length
   const todayGrooming = todaySchedules.filter((s) => s.category === 'Grooming').length
@@ -92,25 +96,29 @@ function DashboardPage() {
 
   // Upcoming schedules (sorted)
   const upcomingSchedules = schedules
-    .slice()
+    .filter((s) => s.status !== 'Selesai')
     .sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime())
     .slice(0, 4)
 
-  // Relative date helper
-  const getRelativeStatus = (dateStr: string) => {
-    if (dateStr === todayStr) return 'Hari ini'
-    if (dateStr === '2026-10-11') return 'Besok'
-    if (dateStr === '2026-10-12') return '2 hari lagi'
-    return dateStr
-  }
+  // Item yang sudah lewat tanggalnya tapi belum selesai
+  const overdueSchedules = schedules.filter((s) => s.status === 'Terlewat').length
+  const overdueReminders = reminders.filter((r) => r.status === 'Terlambat').length
 
   // Active highlighted reminder for the right card
-  const highlightReminder =
-    todayReminders[0] ||
-    activeReminders[0] || {
-      title: 'Obat Cacing Rutin Mochi',
-      notes: 'Berikan obat cacing untuk Mochi sesuai jadwal.',
-    }
+  const highlightReminder = todayReminders[0] || activeReminders[0] || null
+  const highlightText = highlightReminder
+    ? highlightReminder.notes ||
+      `${highlightReminder.title} — ${highlightReminder.dosageOrInstruction}`
+    : 'Semua pengingat sudah tuntas. Hewan kesayanganmu terawat dengan baik!'
+
+  const handleCompleteSchedule = (item: CareSchedule) => {
+    const next = toggleScheduleComplete(item.id)
+    showToast(
+      next
+        ? `"${item.title}" selesai. Jadwal berikutnya dibuat untuk ${formatDate(next.date)}.`
+        : `Jadwal "${item.title}" ditandai selesai!`
+    )
+  }
 
   const handleSaveSchedule = (newSched: CareSchedule) => {
     addSchedule(newSched)
@@ -128,7 +136,7 @@ function DashboardPage() {
               <span>Sahabat Terbaik untuk Hewan Kesayanganmu</span>
             </div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#24312C] tracking-tight leading-tight">
-              Halo, {owner.name.split(' ')[0]}! 👋
+              {greeting()}, {owner.name.split(' ')[0]}! 👋
             </h1>
             <p className="text-sm sm:text-base text-[#718078] leading-relaxed">
               Yuk, pastikan hewan kesayanganmu selalu sehat dan mendapatkan perawatan terbaik setiap hari!
@@ -138,10 +146,11 @@ function DashboardPage() {
               <button
                 type="button"
                 onClick={() => setIsAddSchedOpen(true)}
-                className="px-4 py-2.5 rounded-xl bg-[#21845F] hover:bg-[#19694b] text-white text-xs sm:text-sm font-bold shadow-soft transition-all duration-150 flex items-center gap-2 hover:-translate-y-0.5 cursor-pointer"
+                disabled={pets.length === 0}
+                className="px-4 py-2.5 rounded-xl bg-[#21845F] hover:bg-[#19694b] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-bold shadow-soft transition-all duration-150 flex items-center gap-2 hover:-translate-y-0.5 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
-                <span>+ Buat Jadwal Baru</span>
+                <span>Buat Jadwal Baru</span>
               </button>
               <Link
                 to="/hewan"
@@ -158,6 +167,38 @@ function DashboardPage() {
           </div>
         </div>
       </section>
+
+      {pets.length === 0 && <NoPetsNotice action="membuat jadwal dan pengingat" />}
+
+      {/* PERINGATAN ITEM TERLAMBAT */}
+      {(overdueSchedules > 0 || overdueReminders > 0) && (
+        <section
+          role="alert"
+          className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-2xl bg-[#FCE7E5] border border-[#E11D48]/25"
+        >
+          <div className="flex items-center gap-3 flex-1">
+            <div className="w-10 h-10 rounded-xl bg-white text-[#E11D48] flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <p className="text-sm text-[#24312C]">
+              <span className="font-extrabold">Ada perawatan yang terlewat: </span>
+              {[
+                overdueSchedules > 0 ? `${overdueSchedules} jadwal` : null,
+                overdueReminders > 0 ? `${overdueReminders} pengingat` : null,
+              ]
+                .filter(Boolean)
+                .join(' dan ')}{' '}
+              belum diselesaikan.
+            </p>
+          </div>
+          <Link
+            to={overdueReminders > 0 ? '/pengingat' : '/jadwal'}
+            className="px-4 py-2 rounded-xl bg-[#E11D48] hover:bg-[#BE123C] text-white text-xs font-bold text-center transition-colors"
+          >
+            Tangani Sekarang
+          </Link>
+        </section>
+      )}
 
       {/* 4 STAT CARDS */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
@@ -225,12 +266,13 @@ function DashboardPage() {
           <div className="divide-y divide-[#E9E4DC]/60 mt-3">
             {upcomingSchedules.length === 0 ? (
               <div className="py-10 text-center text-[#718078] text-xs">
-                Belum ada jadwal mendatang. Klik tombol tambah jadwal untuk memulai.
+                Tidak ada jadwal yang menunggu. Klik &quot;Buat Jadwal Baru&quot; untuk menambah.
               </div>
             ) : (
               upcomingSchedules.map((item) => {
                 const pet = pets.find((p) => p.id === item.petId)
-                const relativeStatus = getRelativeStatus(item.date)
+                const relativeStatus = relativeLabel(item.date)
+                const isOverdue = item.status === 'Terlewat'
 
                 const categoryBadgeColor =
                   item.category === 'Vaksin'
@@ -276,7 +318,7 @@ function DashboardPage() {
                           <span>·</span>
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3 text-[#21845F]" />
-                            {item.date} pukul {item.time} WIB
+                            {formatDate(item.date)} pukul {item.time} WIB
                           </span>
                         </div>
                       </div>
@@ -285,13 +327,22 @@ function DashboardPage() {
                     <div className="flex items-center gap-2.5 self-end sm:self-center">
                       <span
                         className={`px-2.5 py-1 rounded-xl text-xs font-bold ${
-                          relativeStatus === 'Hari ini'
-                            ? 'bg-[#FCE7E5] text-[#E11D48] animate-pulse'
+                          relativeStatus === 'Hari ini' || isOverdue
+                            ? 'bg-[#FCE7E5] text-[#E11D48]'
                             : 'bg-[#FAF6EF] text-[#21845F] border border-[#E9E4DC]'
                         }`}
                       >
                         {relativeStatus}
                       </span>
+                      <button
+                        type="button"
+                        onClick={() => handleCompleteSchedule(item)}
+                        className="w-8 h-8 rounded-xl bg-[#FAF6EF] hover:bg-[#21845F] text-[#718078] hover:text-white flex items-center justify-center transition-colors border border-[#E9E4DC] cursor-pointer"
+                        aria-label={`Tandai ${item.title} selesai`}
+                        title="Tandai selesai"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                      </button>
                       <Link
                         to="/jadwal"
                         className="w-8 h-8 rounded-xl bg-[#FAF6EF] hover:bg-[#E6F3E7] text-[#718078] hover:text-[#21845F] flex items-center justify-center transition-colors border border-[#E9E4DC]"
@@ -324,8 +375,7 @@ function DashboardPage() {
             Jangan lupa!
           </h3>
           <p className="text-xs sm:text-sm text-[#718078] mt-2 leading-relaxed max-w-xs">
-            {highlightReminder.notes ||
-              'Berikan obat cacing untuk Mochi sesuai jadwal agar daya tahan tubuhnya tetap terlindungi.'}
+            {highlightText}
           </p>
 
           <div className="mt-6 w-full">

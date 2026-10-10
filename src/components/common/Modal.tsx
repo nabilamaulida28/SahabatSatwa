@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useId } from 'react'
 import { X } from 'lucide-react'
 
 interface ModalProps {
@@ -18,16 +18,18 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   maxWidth = 'max-w-lg',
 }) => {
+  const titleId = useId()
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-      window.addEventListener('keydown', handleKeyDown)
-    }
+    if (!isOpen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleKeyDown)
     return () => {
-      document.body.style.overflow = 'unset'
+      document.body.style.overflow = previousOverflow
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [isOpen, onClose])
@@ -48,11 +50,12 @@ export const Modal: React.FC<ModalProps> = ({
         className={`relative w-full ${maxWidth} bg-white rounded-2xl shadow-soft-lg border border-[#E9E4DC] overflow-hidden z-10 transition-all transform animate-in zoom-in-95 duration-200 my-8`}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={titleId}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#E9E4DC] bg-[#FAF6EF]/60">
           <div>
-            <h3 className="text-lg font-bold text-[#24312C]">{title}</h3>
+            <h3 id={titleId} className="text-lg font-bold text-[#24312C]">{title}</h3>
             {subtitle && <p className="text-xs text-[#718078] mt-0.5">{subtitle}</p>}
           </div>
           <button

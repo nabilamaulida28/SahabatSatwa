@@ -6,6 +6,7 @@ import { WeightModal } from '../components/nutrition/WeightModal'
 import { FeedingModal } from '../components/nutrition/FeedingModal'
 import { ConfirmDialog } from '../components/common/ConfirmDialog'
 import { useToast } from '../components/common/Toast'
+import { NoPetsNotice } from '../components/common/NoPetsNotice'
 import { WeightRecord, FeedingRecord } from '../types'
 import {
   Scale,
@@ -97,6 +98,17 @@ function NutrisiBeratPage() {
       showToast('Catatan pakan berhasil dihapus!', 'info')
       setFeedingToDelete(null)
     }
+  }
+
+  if (pets.length === 0) {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-200">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#24312C] tracking-tight">
+          Catatan Makan & Berat Badan
+        </h1>
+        <NoPetsNotice action="mencatat berat badan dan pola makan" />
+      </div>
+    )
   }
 
   return (

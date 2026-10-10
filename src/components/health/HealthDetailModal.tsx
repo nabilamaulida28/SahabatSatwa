@@ -1,4 +1,5 @@
 import React from 'react'
+import { formatDate } from '../../lib/date'
 import { HealthRecord, Pet } from '../../types'
 import { Modal } from '../common/Modal'
 import {
@@ -59,7 +60,7 @@ export const HealthDetailModal: React.FC<HealthDetailModalProps> = ({
           </div>
           <div className="flex items-center gap-1 text-xs text-[#718078] bg-white px-3 py-1.5 rounded-xl border border-[#E9E4DC] self-start sm:self-center">
             <Calendar className="w-3.5 h-3.5 text-[#21845F]" />
-            <span>{record.date}</span>
+            <span>{formatDate(record.date)}</span>
           </div>
         </div>
 

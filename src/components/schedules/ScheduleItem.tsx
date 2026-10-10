@@ -1,4 +1,5 @@
 import React from 'react'
+import { formatDate } from '../../lib/date'
 import { CareSchedule, Pet } from '../../types'
 import {
   Calendar,
@@ -125,7 +126,7 @@ export const ScheduleItem: React.FC<ScheduleItemProps> = ({
             )}
             <div className="flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-[#21845F]" />
-              <span>{schedule.date}</span>
+              <span>{formatDate(schedule.date)}</span>
             </div>
             <div className="flex items-center gap-1">
               <Clock className="w-3.5 h-3.5 text-[#21845F]" />

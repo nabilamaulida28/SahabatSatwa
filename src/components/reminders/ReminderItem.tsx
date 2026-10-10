@@ -1,4 +1,5 @@
 import React from 'react'
+import { formatDate } from '../../lib/date'
 import { Reminder, Pet } from '../../types'
 import {
   Bell,
@@ -126,7 +127,7 @@ export const ReminderItem: React.FC<ReminderItemProps> = ({
             )}
             <div className="flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-[#21845F]" />
-              <span>{reminder.date}</span>
+              <span>{formatDate(reminder.date)}</span>
             </div>
             <div className="flex items-center gap-1">
               <Clock className="w-3.5 h-3.5 text-[#21845F]" />

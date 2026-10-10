@@ -3,10 +3,13 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useSatwaStore } from '../lib/storage'
 import { ScheduleItem } from '../components/schedules/ScheduleItem'
 import { ScheduleModal } from '../components/schedules/ScheduleModal'
+import { ScheduleCalendar } from '../components/schedules/ScheduleCalendar'
+import { NoPetsNotice } from '../components/common/NoPetsNotice'
+import { formatDate } from '../lib/date'
 import { ConfirmDialog } from '../components/common/ConfirmDialog'
 import { useToast } from '../components/common/Toast'
 import { CareSchedule, ScheduleCategory, ScheduleStatus } from '../types'
-import { Calendar, Plus, Search, Filter } from 'lucide-react'
+import { Calendar, Plus, Search, List, CalendarDays } from 'lucide-react'
 import { EmptyStateIllustration } from '../components/illustrations/EmptyStateIllustration'
 
 export const Route = createFileRoute('/jadwal')({
@@ -28,6 +31,8 @@ function JadwalPerawatanPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua')
   const [selectedStatus, setSelectedStatus] = useState<string>('Semua')
   const [searchQuery, setSearchQuery] = useState('')
+  const [view, setView] = useState<'daftar' | 'kalender'>('daftar')
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
 
   // Modals state
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -46,9 +51,32 @@ function JadwalPerawatanPage() {
       const matchSearch =
         s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (s.notes && s.notes.toLowerCase().includes(searchQuery.toLowerCase()))
-      return matchCategory && matchStatus && matchSearch
+      const matchDate = view !== 'kalender' || !selectedDate || s.date === selectedDate
+      return matchCategory && matchStatus && matchSearch && matchDate
     })
-  }, [schedules, selectedCategory, selectedStatus, searchQuery])
+    // Belum selesai urut dari yang paling dekat; yang selesai di bawah (terbaru dulu)
+    .sort((a, b) => {
+      const aDone = a.status === 'Selesai'
+      const bDone = b.status === 'Selesai'
+      if (aDone !== bDone) return aDone ? 1 : -1
+      const cmp = `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`)
+      return aDone ? -cmp : cmp
+    })
+  }, [schedules, selectedCategory, selectedStatus, searchQuery, view, selectedDate])
+
+  // Kalender hanya mengikuti filter kategori/status/pencarian, bukan tanggal
+  const calendarSchedules = useMemo(
+    () =>
+      schedules.filter((s) => {
+        const q = searchQuery.toLowerCase()
+        return (
+          (selectedCategory === 'Semua' || s.category === selectedCategory) &&
+          (selectedStatus === 'Semua' || s.status === selectedStatus) &&
+          (s.title.toLowerCase().includes(q) || (s.notes && s.notes.toLowerCase().includes(q)))
+        )
+      }),
+    [schedules, selectedCategory, selectedStatus, searchQuery]
+  )
 
   const handleSave = (sched: CareSchedule) => {
     if (scheduleToEdit) {
@@ -69,10 +97,15 @@ function JadwalPerawatanPage() {
   }
 
   const handleToggle = (id: string) => {
-    toggleScheduleComplete(id)
     const target = schedules.find((s) => s.id === id)
-    if (target) {
-      const newStatus = target.status === 'Selesai' ? 'diubah ke Akan Datang' : 'ditandai Selesai'
+    const next = toggleScheduleComplete(id)
+    if (!target) return
+    if (next) {
+      showToast(
+        `Jadwal "${target.title}" selesai. Jadwal berikutnya dibuat untuk ${formatDate(next.date)}.`
+      )
+    } else {
+      const newStatus = target.status === 'Selesai' ? 'dikembalikan ke Akan Datang' : 'ditandai Selesai'
       showToast(`Jadwal "${target.title}" ${newStatus}!`)
     }
   }
@@ -100,12 +133,15 @@ function JadwalPerawatanPage() {
             setScheduleToEdit(null)
             setIsModalOpen(true)
           }}
-          className="px-5 py-2.5 rounded-xl bg-[#21845F] hover:bg-[#19694b] text-white font-bold text-xs sm:text-sm shadow-soft transition-all duration-150 flex items-center justify-center gap-2 hover:-translate-y-0.5 self-start sm:self-auto cursor-pointer"
+          disabled={pets.length === 0}
+          className="px-5 py-2.5 rounded-xl bg-[#21845F] hover:bg-[#19694b] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs sm:text-sm shadow-soft transition-all duration-150 flex items-center justify-center gap-2 hover:-translate-y-0.5 self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-4 h-4" />
-          <span>+ Tambah Jadwal</span>
+          <span>Tambah Jadwal</span>
         </button>
       </div>
+
+      {pets.length === 0 && <NoPetsNotice action="membuat jadwal perawatan" />}
 
       {/* Filter and search bar */}
       <div className="space-y-3 bg-white p-4 sm:p-5 rounded-2xl border border-[#E9E4DC] shadow-soft">
@@ -160,6 +196,46 @@ function JadwalPerawatanPage() {
           ))}
         </div>
       </div>
+
+      {/* Pilih tampilan */}
+      <div className="flex items-center justify-between gap-3">
+        <div
+          role="tablist"
+          aria-label="Mode tampilan jadwal"
+          className="inline-flex p-1 rounded-xl bg-white border border-[#E9E4DC] shadow-2xs"
+        >
+          {([
+            ['daftar', 'Daftar', List],
+            ['kalender', 'Kalender', CalendarDays],
+          ] as const).map(([key, label, Icon]) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={view === key}
+              onClick={() => setView(key)}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                view === key ? 'bg-[#21845F] text-white' : 'text-[#718078] hover:text-[#24312C]'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {label}
+            </button>
+          ))}
+        </div>
+        <span className="text-xs text-[#718078]">
+          {filteredSchedules.length} jadwal
+          {view === 'kalender' && selectedDate ? ` pada ${formatDate(selectedDate)}` : ''}
+        </span>
+      </div>
+
+      {view === 'kalender' && (
+        <ScheduleCalendar
+          schedules={calendarSchedules}
+          selectedDate={selectedDate}
+          onSelectDate={setSelectedDate}
+        />
+      )}
 
       {/* Schedules List */}
       <div className="space-y-3.5">

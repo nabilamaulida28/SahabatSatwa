@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Pet, PetType, PetGender } from '../../types'
 import { Modal } from '../common/Modal'
 import { PawPrint, Image as ImageIcon } from 'lucide-react'
+import { todayStr, addMonths, ageFromBirthDate } from '../../lib/date'
 
 interface PetModalProps {
   isOpen: boolean
@@ -57,8 +58,8 @@ export const PetModal: React.FC<PetModalProps> = ({
       setType('Kucing')
       setBreed('')
       setGender('Jantan')
-      setBirthDate('2024-01-01')
-      setAgeString('1 tahun')
+      setBirthDate(addMonths(todayStr(), -12))
+      setAgeString(ageFromBirthDate(addMonths(todayStr(), -12)))
       setWeight('3.5')
       setColor('')
       setPhoto(PRESET_AVATARS[0])
@@ -75,7 +76,8 @@ export const PetModal: React.FC<PetModalProps> = ({
     if (!weight || isNaN(Number(weight)) || Number(weight) <= 0) {
       newErrors.weight = 'Berat badan harus angka positif (contoh: 4.2)'
     }
-    if (!ageString.trim()) newErrors.ageString = 'Perkiraan umur wajib diisi'
+    if (!birthDate) newErrors.ageString = 'Tanggal lahir wajib diisi'
+    else if (birthDate > todayStr()) newErrors.ageString = 'Tanggal lahir tidak boleh di masa depan'
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -92,8 +94,8 @@ export const PetModal: React.FC<PetModalProps> = ({
       type,
       breed: breed.trim(),
       gender,
-      birthDate: birthDate || new Date().toISOString().split('T')[0],
-      ageString: ageString.trim(),
+      birthDate,
+      ageString: ageFromBirthDate(birthDate) || ageString.trim(),
       currentWeight: numWeight,
       initialWeight: petToEdit ? petToEdit.initialWeight : numWeight,
       color: color.trim() || 'Standar',
@@ -238,18 +240,25 @@ export const PetModal: React.FC<PetModalProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-bold text-[#24312C] mb-1">
-              Perkiraan Umur <span className="text-[#E11D48]">*</span>
+              Tanggal Lahir / Perkiraan <span className="text-[#E11D48]">*</span>
             </label>
             <input
-              type="text"
-              value={ageString}
-              onChange={(e) => setAgeString(e.target.value)}
-              placeholder="Contoh: 2 tahun, 8 bulan"
+              type="date"
+              value={birthDate}
+              max={todayStr()}
+              onChange={(e) => {
+                setBirthDate(e.target.value)
+                setAgeString(ageFromBirthDate(e.target.value))
+              }}
               className={`w-full px-3.5 py-2.5 bg-[#FAF6EF] border rounded-xl text-sm text-[#24312C] focus:outline-none focus:ring-2 focus:ring-[#21845F]/30 ${
                 errors.ageString ? 'border-[#E11D48]' : 'border-[#E9E4DC] focus:border-[#21845F]'
               }`}
             />
-            {errors.ageString && <p className="text-[11px] text-[#E11D48] mt-1">{errors.ageString}</p>}
+            {errors.ageString ? (
+              <p className="text-[11px] text-[#E11D48] mt-1">{errors.ageString}</p>
+            ) : (
+              ageString && <p className="text-[11px] text-[#718078] mt-1">Umur saat ini: {ageString}</p>
+            )}
           </div>
 
           <div>

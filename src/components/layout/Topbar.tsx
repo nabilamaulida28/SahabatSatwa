@@ -14,6 +14,7 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { useSatwaStore } from '../../lib/storage'
 import { SearchModal } from '../common/SearchModal'
 import { useToast } from '../common/Toast'
+import { ConfirmDialog } from '../common/ConfirmDialog'
 
 export const Topbar: React.FC = () => {
   const {
@@ -29,6 +30,7 @@ export const Topbar: React.FC = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isNotifOpen, setIsNotifOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [isResetOpen, setIsResetOpen] = useState(false)
 
   const notifRef = useRef<HTMLDivElement>(null)
   const profileRef = useRef<HTMLDivElement>(null)
@@ -45,16 +47,24 @@ export const Topbar: React.FC = () => {
         setIsProfileOpen(false)
       }
     }
+    // Shortcut pencarian: Ctrl+K / ⌘K
+    const handleKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setIsSearchOpen((prev) => !prev)
+      }
+    }
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKey)
+    }
   }, [])
 
   const handleResetData = () => {
     setIsProfileOpen(false)
-    if (window.confirm('Kembalikan semua data ke setelan demo awal?')) {
-      resetAllData()
-      showToast('Data demo berhasil direset ke setelan awal!', 'info')
-    }
+    setIsResetOpen(true)
   }
 
   return (
@@ -66,6 +76,7 @@ export const Topbar: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsSearchOpen(true)}
+              aria-label="Buka pencarian (Ctrl+K)"
               className="w-full flex items-center justify-between px-3.5 py-2 bg-[#FAF6EF] hover:bg-[#FAF6EF]/80 border border-[#E9E4DC] rounded-xl text-xs sm:text-sm text-[#718078] transition-all group cursor-pointer"
             >
               <div className="flex items-center gap-2.5 truncate">
@@ -73,7 +84,7 @@ export const Topbar: React.FC = () => {
                 <span className="truncate">Cari hewan, jenis, atau pemilik...</span>
               </div>
               <span className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono bg-white rounded border border-[#E9E4DC] text-[#718078]">
-                ⌘K
+                Ctrl K
               </span>
             </button>
           </div>
@@ -224,6 +235,18 @@ export const Topbar: React.FC = () => {
           </div>
         </div>
       </header>
+
+      <ConfirmDialog
+        isOpen={isResetOpen}
+        onClose={() => setIsResetOpen(false)}
+        onConfirm={() => {
+          resetAllData()
+          showToast('Data demo berhasil direset ke setelan awal!', 'info')
+        }}
+        title="Reset Data Demo?"
+        message="Semua data yang kamu tambahkan atau ubah akan dikembalikan ke data demo awal."
+        confirmText="Ya, Reset"
+      />
 
       {/* Global Search Modal */}
       <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />

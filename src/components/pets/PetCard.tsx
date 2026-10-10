@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { ageFromBirthDate } from '../../lib/date'
 import { Pet } from '../../types'
 import { MoreVertical, Edit2, Trash2, Eye, Scale, Calendar, Heart } from 'lucide-react'
 
@@ -116,7 +117,7 @@ export const PetCard: React.FC<PetCardProps> = ({
           <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-[#E9E4DC]/60 text-xs">
             <div className="flex items-center gap-1.5 text-[#718078]">
               <Calendar className="w-3.5 h-3.5 text-[#21845F]" />
-              <span className="font-semibold text-[#24312C]">{pet.ageString}</span>
+              <span className="font-semibold text-[#24312C]">{ageFromBirthDate(pet.birthDate) || pet.ageString}</span>
             </div>
             <div className="flex items-center gap-1.5 text-[#718078]">
               <Scale className="w-3.5 h-3.5 text-[#21845F]" />

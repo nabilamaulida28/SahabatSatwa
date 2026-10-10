@@ -9,6 +9,7 @@ import {
 import * as React from 'react'
 import { AppLayout } from '../components/layout/AppLayout'
 import appCss from '../styles/app.css?url'
+import { NotFoundPage } from '../components/common/NotFoundPage'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -23,6 +24,7 @@ export const Route = createRootRoute({
       {
         title: 'SahabatSatwa — Catatan Perawatan Hewan',
       },
+      { name: 'theme-color', content: '#21845F' },
       {
         name: 'description',
         content: 'Aplikasi pencatatan dan pengelolaan perawatan hewan kesayangan Anda: jadwal vaksin, riwayat kesehatan, dan grafik berat badan.',
@@ -30,6 +32,10 @@ export const Route = createRootRoute({
     ],
     links: [
       { rel: 'stylesheet', href: appCss },
+      {
+        rel: 'icon',
+        href: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>",
+      },
       {
         rel: 'preconnect',
         href: 'https://fonts.googleapis.com',
@@ -46,6 +52,7 @@ export const Route = createRootRoute({
     ],
   }),
   component: RootComponent,
+  notFoundComponent: NotFoundPage,
 })
 
 function RootComponent() {

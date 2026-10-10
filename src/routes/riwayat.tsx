@@ -6,6 +6,7 @@ import { HealthRecordModal } from '../components/health/HealthRecordModal'
 import { HealthDetailModal } from '../components/health/HealthDetailModal'
 import { ConfirmDialog } from '../components/common/ConfirmDialog'
 import { useToast } from '../components/common/Toast'
+import { NoPetsNotice } from '../components/common/NoPetsNotice'
 import { HealthRecord, Pet } from '../types'
 import { ClipboardList, Plus, Search, ShieldCheck } from 'lucide-react'
 import { EmptyStateIllustration } from '../components/illustrations/EmptyStateIllustration'
@@ -87,12 +88,15 @@ function RiwayatKesehatanPage() {
             setRecordToEdit(null)
             setIsModalOpen(true)
           }}
-          className="px-5 py-2.5 rounded-xl bg-[#21845F] hover:bg-[#19694b] text-white font-bold text-xs sm:text-sm shadow-soft transition-all duration-150 flex items-center justify-center gap-2 hover:-translate-y-0.5 self-start sm:self-auto cursor-pointer"
+          disabled={pets.length === 0}
+          className="px-5 py-2.5 rounded-xl bg-[#21845F] hover:bg-[#19694b] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs sm:text-sm shadow-soft transition-all duration-150 flex items-center justify-center gap-2 hover:-translate-y-0.5 self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-4 h-4" />
-          <span>+ Tambah Catatan</span>
+          <span>Tambah Catatan</span>
         </button>
       </div>
+
+      {pets.length === 0 && <NoPetsNotice action="mencatat riwayat kesehatan" />}
 
       {/* Filter and search bar */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-[#E9E4DC] shadow-soft">

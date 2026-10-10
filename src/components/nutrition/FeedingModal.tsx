@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { FeedingRecord, Pet, FoodType } from '../../types'
 import { Modal } from '../common/Modal'
+import { todayStr } from '../../lib/date'
 import { Utensils } from 'lucide-react'
 
 interface FeedingModalProps {
@@ -36,7 +37,7 @@ export const FeedingModal: React.FC<FeedingModalProps> = ({
 
   useEffect(() => {
     setPetId(defaultPetId || pets[0]?.id || '')
-    setDate(new Date().toISOString().split('T')[0])
+    setDate(todayStr())
     setTime('08:00')
     setFoodType('Dry Food (Makanan Kering)')
     setPortion('')

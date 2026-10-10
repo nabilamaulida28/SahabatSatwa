@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { CareSchedule, Pet, ScheduleCategory, RepeatInterval, ScheduleStatus } from '../../types'
 import { Modal } from '../common/Modal'
+import { todayStr } from '../../lib/date'
 import { Calendar, Clock, Plus } from 'lucide-react'
 
 interface ScheduleModalProps {
@@ -43,7 +44,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
       setPetId(pets[0]?.id || '')
       setTitle('')
       setCategory('Vaksin')
-      setDate(new Date().toISOString().split('T')[0])
+      setDate(todayStr())
       setTime('10:00')
       setNotes('')
       setRepeat('Tidak berulang')

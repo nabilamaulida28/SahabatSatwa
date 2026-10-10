@@ -1,9 +1,11 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useSatwaStore } from '../lib/storage'
 import { EditProfileModal } from '../components/profile/EditProfileModal'
 import { ProfilePetsIllustration } from '../components/illustrations/ProfilePetsIllustration'
 import { useToast } from '../components/common/Toast'
+import { ConfirmDialog } from '../components/common/ConfirmDialog'
+import { todayStr } from '../lib/date'
 import { OwnerProfile } from '../types'
 import {
   User,
@@ -18,6 +20,8 @@ import {
   RotateCcw,
   Sparkles,
   Info,
+  Download,
+  Upload,
 } from 'lucide-react'
 
 export const Route = createFileRoute('/profil')({
@@ -32,21 +36,50 @@ function ProfilPemilikPage() {
     schedules,
     healthRecords,
     resetAllData,
+    exportData,
+    importData,
   } = useSatwaStore()
   const { showToast } = useToast()
 
   const [isEditOpen, setIsEditOpen] = useState(false)
+  const [isResetOpen, setIsResetOpen] = useState(false)
+  const [pendingImport, setPendingImport] = useState<unknown | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleSaveProfile = (updated: OwnerProfile) => {
     saveOwner(updated)
     showToast('Profil pemilik berhasil diperbarui!')
   }
 
-  const handleReset = () => {
-    if (window.confirm('Kembalikan semua data ke setelan demo awal?')) {
-      resetAllData()
-      showToast('Data demo berhasil direset ke setelan awal!', 'info')
+  const handleReset = () => setIsResetOpen(true)
+
+  const handleExport = () => {
+    const blob = new Blob([JSON.stringify(exportData(), null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `sahabatsatwa-backup-${todayStr()}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+    showToast('Backup berhasil diunduh!')
+  }
+
+  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // izinkan memilih file yang sama lagi
+    if (!file) return
+    try {
+      setPendingImport(JSON.parse(await file.text()))
+    } catch {
+      showToast('File bukan JSON yang valid.', 'error')
     }
+  }
+
+  const handleConfirmImport = () => {
+    const result = importData(pendingImport)
+    if (result.ok) showToast('Data berhasil dipulihkan dari backup!')
+    else showToast(result.error, 'error')
+    setPendingImport(null)
   }
 
   return (
@@ -210,6 +243,64 @@ function ProfilPemilikPage() {
           </div>
         </div>
       </div>
+
+      {/* Cadangan Data */}
+      <div className="bg-white rounded-3xl border border-[#E9E4DC] p-6 shadow-soft space-y-4">
+        <div className="flex items-center gap-2 pb-2 border-b border-[#E9E4DC]">
+          <Download className="w-5 h-5 text-[#21845F]" />
+          <h3 className="text-base font-extrabold text-[#24312C]">Cadangkan & Pulihkan Data</h3>
+        </div>
+        <p className="text-xs text-[#718078] leading-relaxed">
+          Data tersimpan di browser ini saja. Jika riwayat browser dibersihkan atau kamu berganti
+          perangkat, data bisa hilang. Unduh backup secara berkala, lalu impor kembali kapan saja.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            type="button"
+            onClick={handleExport}
+            className="flex-1 py-2.5 px-4 rounded-xl bg-[#21845F] hover:bg-[#19694b] text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <Download className="w-4 h-4" />
+            Unduh Backup (.json)
+          </button>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="flex-1 py-2.5 px-4 rounded-xl bg-[#FAF6EF] hover:bg-[#E6F3E7] text-[#24312C] font-bold text-xs border border-[#E9E4DC] transition-colors flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <Upload className="w-4 h-4 text-[#21845F]" />
+            Impor dari Backup
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json,.json"
+            onChange={handleFileSelected}
+            className="hidden"
+          />
+        </div>
+      </div>
+
+      <ConfirmDialog
+        isOpen={isResetOpen}
+        onClose={() => setIsResetOpen(false)}
+        onConfirm={() => {
+          resetAllData()
+          showToast('Data demo berhasil direset ke setelan awal!', 'info')
+        }}
+        title="Reset Data Demo?"
+        message="Semua data yang kamu tambahkan atau ubah akan dikembalikan ke data demo awal."
+        confirmText="Ya, Reset"
+      />
+
+      <ConfirmDialog
+        isOpen={pendingImport !== null}
+        onClose={() => setPendingImport(null)}
+        onConfirm={handleConfirmImport}
+        title="Pulihkan dari Backup?"
+        message="Data yang ada saat ini akan ditimpa dengan isi file backup."
+        confirmText="Ya, Pulihkan"
+      />
 
       {/* Warm Closing Section with Cute Pet Illustration */}
       <section className="bg-gradient-to-r from-[#FFF9EE] via-[#FAF6EF] to-[#E6F3E7] rounded-3xl border border-[#E9E4DC] p-8 text-center flex flex-col items-center justify-center shadow-soft">
