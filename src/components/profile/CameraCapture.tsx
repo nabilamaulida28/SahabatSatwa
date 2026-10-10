@@ -139,7 +139,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onCance
   return (
     <div className="space-y-4">
       {/* Video Viewport / Photo Preview */}
-      <div className="relative w-full aspect-square max-w-[340px] mx-auto bg-[#24312C] rounded-3xl overflow-hidden border-4 border-[#E6F3E7] shadow-soft-lg flex items-center justify-center">
+      <div className="relative w-full aspect-square max-w-[270px] sm:max-w-[300px] mx-auto bg-[#24312C] rounded-3xl overflow-hidden border-4 border-[#E6F3E7] shadow-soft-lg flex items-center justify-center shrink-0">
         {capturedImage ? (
           // Captured Preview
           <img
@@ -170,7 +170,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onCance
             />
 
             {/* Circular framing overlay guide */}
-            <div className="absolute inset-0 pointer-events-none border-[3px] border-dashed border-white/60 rounded-full m-6" />
+            <div className="absolute inset-0 pointer-events-none border-[3px] border-dashed border-white/60 rounded-full m-4 sm:m-5" />
 
             {isLoading && (
               <div className="absolute inset-0 bg-[#24312C]/80 flex flex-col items-center justify-center text-white gap-2 text-xs">

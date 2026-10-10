@@ -263,18 +263,18 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
             />
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#E9E4DC]">
+          {/* Action Buttons (Sticky at bottom so always visible) */}
+          <div className="sticky bottom-0 bg-white/95 backdrop-blur-xs pt-3 pb-1 -mx-4 sm:-mx-6 px-4 sm:px-6 border-t border-[#E9E4DC] flex items-center justify-end gap-3 mt-4">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-semibold text-[#718078] hover:text-[#24312C] bg-[#FAF6EF] hover:bg-[#E9E4DC]/60 rounded-xl transition-colors"
+              className="px-4 py-2 text-sm font-semibold text-[#718078] hover:text-[#24312C] bg-[#FAF6EF] hover:bg-[#E9E4DC]/60 rounded-xl transition-colors cursor-pointer"
             >
               Batal
             </button>
             <button
               type="submit"
-              className="px-5 py-2 text-sm font-bold text-white bg-[#21845F] hover:bg-[#19694b] rounded-xl shadow-xs transition-colors flex items-center gap-2"
+              className="px-5 py-2 text-sm font-bold text-white bg-[#21845F] hover:bg-[#19694b] rounded-xl shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
             >
               <User className="w-4 h-4" />
               <span>Simpan Perubahan</span>
@@ -289,6 +289,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
         onClose={() => setIsAvatarModalOpen(false)}
         currentAvatar={avatar}
         onSave={(newUrl) => setAvatar(newUrl)}
+        zIndex="z-[110]"
       />
     </>
   )

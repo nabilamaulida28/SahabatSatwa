@@ -15,6 +15,7 @@ interface ChangeAvatarModalProps {
   onClose: () => void
   currentAvatar: string
   onSave: (avatarUrl: string) => void
+  zIndex?: string
 }
 
 const PRESET_AVATARS = [
@@ -51,6 +52,7 @@ export const ChangeAvatarModal: React.FC<ChangeAvatarModalProps> = ({
   onClose,
   currentAvatar,
   onSave,
+  zIndex = 'z-[100]',
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('camera')
   const [selectedAvatar, setSelectedAvatar] = useState<string>(currentAvatar)
@@ -110,6 +112,7 @@ export const ChangeAvatarModal: React.FC<ChangeAvatarModalProps> = ({
       title="Ganti Foto Profil"
       subtitle="Ambil langsung dengan kamera atau unggah dari perangkat"
       maxWidth="max-w-md"
+      zIndex={zIndex}
     >
       <div className="space-y-4">
         {/* Navigation Tabs */}
