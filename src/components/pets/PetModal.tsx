@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Pet, PetType, PetGender } from '../../types'
 import { Modal } from '../common/Modal'
-import { PawPrint, Image as ImageIcon } from 'lucide-react'
+import { PawPrint, Image as ImageIcon, Camera, Upload } from 'lucide-react'
 import { todayStr, addMonths, ageFromBirthDate } from '../../lib/date'
+import { CameraCapture } from '../profile/CameraCapture'
 
 interface PetModalProps {
   isOpen: boolean
@@ -37,6 +38,8 @@ export const PetModal: React.FC<PetModalProps> = ({
   const [photo, setPhoto] = useState(PRESET_AVATARS[0])
   const [notes, setNotes] = useState('')
   const [statusBadge, setStatusBadge] = useState('Vaksin Lengkap')
+  const [isCameraOpen, setIsCameraOpen] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
 
@@ -118,36 +121,108 @@ export const PetModal: React.FC<PetModalProps> = ({
       maxWidth="max-w-xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Preset Photo Selector */}
-        <div>
-          <label className="block text-xs font-bold text-[#24312C] mb-2">
-            Pilih Foto Avatar Hewan
-          </label>
-          <div className="flex items-center gap-2.5 overflow-x-auto pb-2">
-            {PRESET_AVATARS.map((url, idx) => (
+        {/* Photo Selector with Camera & Upload */}
+        <div className="p-3 bg-[#FAF6EF] rounded-2xl border border-[#E9E4DC]">
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-xs font-bold text-[#24312C]">
+              Foto Hewan Peliharaan
+            </label>
+            <div className="flex items-center gap-1.5">
               <button
-                key={idx}
                 type="button"
-                onClick={() => setPhoto(url)}
-                className={`relative w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 transition-transform ${
-                  photo === url
-                    ? 'border-[#21845F] scale-110 shadow-xs'
-                    : 'border-[#E9E4DC] hover:opacity-80'
-                }`}
+                onClick={() => setIsCameraOpen(true)}
+                className="px-2.5 py-1 rounded-lg bg-[#21845F] hover:bg-[#19694b] text-white text-[11px] font-bold transition-colors flex items-center gap-1 cursor-pointer"
               >
-                <img src={url} alt={`Preset ${idx}`} className="w-full h-full object-cover" />
+                <Camera className="w-3.5 h-3.5" />
+                <span>Kamera</span>
               </button>
-            ))}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="px-2.5 py-1 rounded-lg bg-white hover:bg-[#E6F3E7] text-[#24312C] hover:text-[#21845F] text-[11px] font-bold border border-[#E9E4DC] transition-colors flex items-center gap-1 cursor-pointer"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>Unggah</span>
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+                  const reader = new FileReader()
+                  reader.onload = () => {
+                    const img = new Image()
+                    img.onload = () => {
+                      const canvas = document.createElement('canvas')
+                      const size = Math.min(img.width, img.height)
+                      canvas.width = 400
+                      canvas.height = 400
+                      const ctx = canvas.getContext('2d')
+                      if (ctx) {
+                        const sx = (img.width - size) / 2
+                        const sy = (img.height - size) / 2
+                        ctx.drawImage(img, sx, sy, size, size, 0, 0, 400, 400)
+                        setPhoto(canvas.toDataURL('image/jpeg', 0.88))
+                      }
+                    }
+                    img.src = reader.result as string
+                  }
+                  reader.readAsDataURL(file)
+                }}
+              />
+            </div>
           </div>
-          <div className="mt-2">
-            <input
-              type="text"
-              value={photo}
-              onChange={(e) => setPhoto(e.target.value)}
-              placeholder="Atau masukkan URL foto kustom..."
-              className="w-full px-3 py-2 bg-[#FAF6EF] border border-[#E9E4DC] rounded-xl text-xs text-[#24312C] focus:outline-none focus:ring-1 focus:ring-[#21845F]"
-            />
-          </div>
+
+          {/* Camera live capture preview if active */}
+          {isCameraOpen ? (
+            <div className="p-3 bg-white rounded-2xl border border-[#E9E4DC] mb-3">
+              <CameraCapture
+                onCapture={(dataUrl) => {
+                  setPhoto(dataUrl)
+                  setIsCameraOpen(false)
+                }}
+                onCancel={() => setIsCameraOpen(false)}
+              />
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 mb-2">
+              <img
+                src={photo}
+                alt="Selected"
+                className="w-14 h-14 rounded-2xl object-cover border-2 border-white shadow-2xs shrink-0"
+              />
+              <div className="flex-1 overflow-x-auto pb-1">
+                <span className="text-[10px] text-[#718078] block mb-1">Preset Cepat:</span>
+                <div className="flex items-center gap-2">
+                  {PRESET_AVATARS.map((url, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setPhoto(url)}
+                      className={`relative w-9 h-9 rounded-xl overflow-hidden shrink-0 border-2 transition-transform ${
+                        photo === url
+                          ? 'border-[#21845F] scale-105 shadow-xs'
+                          : 'border-[#E9E4DC] hover:opacity-80'
+                      }`}
+                    >
+                      <img src={url} alt={`Preset ${idx}`} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <input
+            type="text"
+            value={photo}
+            onChange={(e) => setPhoto(e.target.value)}
+            placeholder="Atau masukkan URL foto kustom..."
+            className="w-full px-3 py-1.5 bg-white border border-[#E9E4DC] rounded-xl text-xs text-[#24312C] focus:outline-none focus:ring-1 focus:ring-[#21845F]"
+          />
         </div>
 
         {/* Row 1: Name & Type */}

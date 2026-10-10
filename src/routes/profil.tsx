@@ -22,7 +22,9 @@ import {
   Info,
   Download,
   Upload,
+  Camera,
 } from 'lucide-react'
+import { ChangeAvatarModal } from '../components/profile/ChangeAvatarModal'
 
 export const Route = createFileRoute('/profil')({
   component: ProfilPemilikPage,
@@ -43,6 +45,7 @@ function ProfilPemilikPage() {
 
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isResetOpen, setIsResetOpen] = useState(false)
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false)
   const [pendingImport, setPendingImport] = useState<unknown | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -99,29 +102,57 @@ function ProfilPemilikPage() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsEditOpen(true)}
-          className="px-5 py-2.5 rounded-xl bg-[#21845F] hover:bg-[#19694b] text-white font-bold text-xs sm:text-sm shadow-soft transition-all duration-150 flex items-center justify-center gap-2 hover:-translate-y-0.5 self-start sm:self-auto cursor-pointer"
-        >
-          <Edit2 className="w-4 h-4" />
-          <span>Edit Profil</span>
-        </button>
+        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={() => setIsAvatarModalOpen(true)}
+            className="px-4 py-2.5 rounded-xl bg-white hover:bg-[#E6F3E7] text-[#24312C] hover:text-[#21845F] font-bold text-xs sm:text-sm border border-[#E9E4DC] shadow-2xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <Camera className="w-4 h-4 text-[#21845F]" />
+            <span>Ganti Foto</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsEditOpen(true)}
+            className="px-5 py-2.5 rounded-xl bg-[#21845F] hover:bg-[#19694b] text-white font-bold text-xs sm:text-sm shadow-soft transition-all duration-150 flex items-center justify-center gap-2 hover:-translate-y-0.5 cursor-pointer"
+          >
+            <Edit2 className="w-4 h-4" />
+            <span>Edit Profil</span>
+          </button>
+        </div>
       </div>
 
       {/* Main Profile Card */}
       <div className="bg-white rounded-3xl border border-[#E9E4DC] p-6 sm:p-8 shadow-soft">
         <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-          {/* Avatar with Cute Border */}
-          <div className="relative">
+          {/* Avatar with Cute Border and Camera Button */}
+          <div
+            className="relative group cursor-pointer"
+            onClick={() => setIsAvatarModalOpen(true)}
+            title="Klik untuk ganti foto atau ambil foto dengan kamera"
+          >
             <img
               src={owner.avatar}
               alt={owner.name}
-              className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl object-cover border-4 border-[#E6F3E7] shadow-soft"
+              className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl object-cover border-4 border-[#E6F3E7] shadow-soft group-hover:scale-102 transition-transform duration-200"
             />
-            <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-[#21845F] text-white flex items-center justify-center shadow-xs">
-              <PawPrint className="w-4 h-4" />
+            {/* Hover overlay hint */}
+            <div className="absolute inset-0 bg-black/40 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[11px] font-bold gap-1 backdrop-blur-2xs">
+              <Camera className="w-6 h-6" />
+              <span>Ganti Foto</span>
             </div>
+            {/* Camera badge trigger */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsAvatarModalOpen(true)
+              }}
+              className="absolute -bottom-2 -right-2 w-9 h-9 rounded-full bg-[#21845F] hover:bg-[#19694b] text-white flex items-center justify-center shadow-soft hover:scale-110 transition-transform cursor-pointer"
+              title="Ambil foto kamera atau unggah"
+            >
+              <Camera className="w-4 h-4" />
+            </button>
           </div>
 
           {/* Profile Identity Details */}
@@ -319,6 +350,17 @@ function ProfilPemilikPage() {
         onClose={() => setIsEditOpen(false)}
         onSave={handleSaveProfile}
         currentProfile={owner}
+      />
+
+      {/* Change Avatar / Camera Modal */}
+      <ChangeAvatarModal
+        isOpen={isAvatarModalOpen}
+        onClose={() => setIsAvatarModalOpen(false)}
+        currentAvatar={owner.avatar}
+        onSave={(newAvatar) => {
+          saveOwner({ ...owner, avatar: newAvatar })
+          showToast('Foto profil berhasil diperbarui!')
+        }}
       />
     </div>
   )
