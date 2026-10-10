@@ -11,13 +11,11 @@ import {
   EyeOff,
   LogIn,
   UserPlus,
-  Database,
   Sparkles,
   Heart,
   CheckCircle2,
   ArrowRight,
   ShieldCheck,
-  Zap,
 } from 'lucide-react'
 
 export const Route = createFileRoute('/masuk')({
@@ -26,7 +24,7 @@ export const Route = createFileRoute('/masuk')({
 
 function MasukPage() {
   const navigate = useNavigate()
-  const { user, signIn, signUp, signOut, loginAsDemo, isConfigured, isDemoUser } = useAuth()
+  const { user, signIn, signUp, signOut, isConfigured } = useAuth()
   const { showToast } = useToast()
 
   const [tab, setTab] = useState<'masuk' | 'daftar'>('masuk')
@@ -41,8 +39,8 @@ function MasukPage() {
   }, [user, navigate])
 
   // Login form state
-  const [loginEmail, setLoginEmail] = useState('nabila@sahabatsatwa.id')
-  const [loginPassword, setLoginPassword] = useState('password123')
+  const [loginEmail, setLoginEmail] = useState('')
+  const [loginPassword, setLoginPassword] = useState('')
 
   // Register form state
   const [regName, setRegName] = useState('')
@@ -87,7 +85,7 @@ function MasukPage() {
     }
 
     if (!isConfigured) {
-      showToast('Koneksi Supabase belum diatur di file .env (VITE_SUPABASE_URL & VITE_SUPABASE_ANON_KEY).', 'error')
+      showToast('Layanan pendaftaran akun saat ini belum dapat terhubung.', 'error')
       return
     }
 
@@ -101,12 +99,6 @@ function MasukPage() {
     } else {
       showToast(result.error || 'Gagal mendaftar. Silakan coba lagi.', 'error')
     }
-  }
-
-  const handleDemoLogin = () => {
-    loginAsDemo()
-    showToast('Masuk sebagai Akun Demo (Nabila Maulida)', 'success')
-    navigate({ to: '/' })
   }
 
   return (
@@ -126,13 +118,6 @@ function MasukPage() {
             </span>
           </div>
         </div>
-
-        {isConfigured && (
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#E7F6ED] text-[#196447] border border-[#95D9B5]/40">
-            <span className="w-2 h-2 rounded-full bg-[#21845F] animate-pulse" />
-            <span>Supabase Online (.env)</span>
-          </div>
-        )}
       </div>
 
       {/* Main Auth Card */}
@@ -168,7 +153,7 @@ function MasukPage() {
               <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-amber-300">
                 <CheckCircle2 className="w-3.5 h-3.5" />
               </div>
-              <span>Database PostgreSQL Supabase Online</span>
+              <span>Penyimpanan aman dan terintegrasi</span>
             </div>
             <div className="flex items-center gap-2.5 text-xs text-white/90">
               <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-amber-300">
@@ -209,12 +194,6 @@ function MasukPage() {
               <p className="text-sm text-[#718078] mt-1">
                 Masuk sebagai: <strong className="text-[#24312C]">{user.email}</strong>
               </p>
-
-              {isDemoUser && (
-                <div className="inline-block mt-3 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-                  ⚡ Mode Akun Demo Aktif
-                </div>
-              )}
 
               <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
                 <button
@@ -321,18 +300,6 @@ function MasukPage() {
                       </>
                     )}
                   </button>
-
-                  {/* Quick Demo Login */}
-                  <div className="pt-3 border-t border-[#E9E4DC] space-y-2">
-                    <button
-                      type="button"
-                      onClick={handleDemoLogin}
-                      className="w-full py-2.5 rounded-2xl border border-[#E9E4DC] hover:bg-[#FAF6EF] text-xs font-bold text-[#24312C] flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                    >
-                      <Zap className="w-4 h-4 text-amber-500 fill-amber-500" />
-                      Coba Mode Demo Instan
-                    </button>
-                  </div>
                 </form>
               ) : (
                 /* Register Tab Content */
@@ -412,15 +379,6 @@ function MasukPage() {
                       </>
                     )}
                   </button>
-
-                  {!isConfigured && (
-                    <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-[11px] text-amber-800 flex items-start gap-2">
-                      <Database className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                      <div>
-                        Pendaftaran akun online memerlukan konfigurasi Supabase di file <strong>.env</strong> (<strong>VITE_SUPABASE_URL</strong> dan <strong>VITE_SUPABASE_ANON_KEY</strong>).
-                      </div>
-                    </div>
-                  )}
                 </form>
               )}
             </div>

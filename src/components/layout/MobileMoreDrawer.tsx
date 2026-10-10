@@ -33,10 +33,10 @@ export const MobileMoreDrawer: React.FC<MobileMoreDrawerProps> = ({ isOpen, onCl
       onClose={() => setIsResetOpen(false)}
       onConfirm={() => {
         resetAllData()
-        showToast('Data demo berhasil direset ke setelan awal!', 'info')
+        showToast('Data berhasil direset ke setelan awal!', 'info')
       }}
-      title="Reset Data Demo?"
-      message="Semua data yang kamu tambahkan atau ubah akan dikembalikan ke data demo awal."
+      title="Reset Data?"
+      message="Semua data yang kamu tambahkan atau ubah akan dikembalikan ke setelan awal."
       confirmText="Ya, Reset"
     />
   )
@@ -160,7 +160,7 @@ export const MobileMoreDrawer: React.FC<MobileMoreDrawerProps> = ({ isOpen, onCl
               className="text-xs font-semibold text-[#E11D48] hover:underline flex items-center gap-1.5 py-2 px-1 cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              Reset Data Demo
+              Reset Data
             </button>
             {user && (
               <button

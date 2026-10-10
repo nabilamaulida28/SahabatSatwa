@@ -236,7 +236,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         initDemoUser()
         return { success: true }
       }
-      return { success: false, error: 'Koneksi Supabase belum aktif. Silakan hubungkan Supabase terlebih dahulu.' }
+      return { success: false, error: 'Koneksi akun belum aktif. Silakan coba beberapa saat lagi.' }
     }
 
     try {
@@ -273,7 +273,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!supabase || !isConfigured) {
       return {
         success: false,
-        error: 'Supabase belum dihubungkan. Klik tombol "Koneksi Supabase" untuk memasukkan kredensial project Anda.',
+        error: 'Layanan pendaftaran akun saat ini belum dapat terhubung.',
       }
     }
 

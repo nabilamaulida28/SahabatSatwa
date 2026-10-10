@@ -24,11 +24,8 @@ import {
   Download,
   Upload,
   Camera,
-  Database,
-  Zap,
   LogIn,
   LogOut,
-  RefreshCw,
 } from 'lucide-react'
 import { ChangeAvatarModal } from '../components/profile/ChangeAvatarModal'
 
@@ -46,25 +43,15 @@ function ProfilPemilikPage() {
     resetAllData,
     exportData,
     importData,
-    syncWithSupabase,
-    isRealtimeActive,
   } = useSatwaStore()
-  const { user, isConfigured, isDemoUser, signOut } = useAuth()
+  const { user, signOut } = useAuth()
   const { showToast } = useToast()
 
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isResetOpen, setIsResetOpen] = useState(false)
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false)
-  const [isSyncing, setIsSyncing] = useState(false)
   const [pendingImport, setPendingImport] = useState<unknown | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const handleManualSync = async () => {
-    setIsSyncing(true)
-    await syncWithSupabase()
-    setIsSyncing(false)
-    showToast('Sinkronisasi database Supabase selesai!', 'success')
-  }
 
   const handleSaveProfile = (updated: OwnerProfile) => {
     saveOwner(updated)
@@ -233,84 +220,8 @@ function ProfilPemilikPage() {
         </div>
       </div>
 
-      {/* Account Info and Supabase Cloud Sync */}
+      {/* Sesi Akun & Cadangan Data */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Supabase Cloud Connection Card */}
-        <div className="bg-white rounded-3xl border border-[#E9E4DC] p-6 shadow-soft space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-[#E9E4DC]">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-[#21845F]/10 text-[#21845F] flex items-center justify-center">
-                <Database className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-extrabold text-[#24312C] leading-none">Database & Realtime</h3>
-                <p className="text-[11px] text-[#718078] mt-1">Penyimpanan Online Supabase</p>
-              </div>
-            </div>
-
-            <span
-              className={`px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5 ${
-                isConfigured
-                  ? 'bg-[#E7F6ED] text-[#196447]'
-                  : 'bg-amber-50 text-amber-800'
-              }`}
-            >
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  isConfigured ? 'bg-[#21845F] animate-pulse' : 'bg-amber-500'
-                }`}
-              />
-              {isConfigured ? 'Online' : 'Lokal'}
-            </span>
-          </div>
-
-          <div className="space-y-2.5 text-xs">
-            <div className="flex items-center justify-between py-1.5 border-b border-[#E9E4DC]/50">
-              <span className="text-[#718078]">Status Database:</span>
-              <span className="font-bold text-[#24312C] flex items-center gap-1">
-                {isConfigured ? (
-                  <>
-                    <Zap className="w-3.5 h-3.5 text-[#21845F] fill-current" />
-                    Supabase PostgreSQL (Aktif)
-                  </>
-                ) : (
-                  'Browser LocalStorage'
-                )}
-              </span>
-            </div>
-            <div className="flex items-center justify-between py-1.5 border-b border-[#E9E4DC]/50">
-              <span className="text-[#718078]">Sinkronisasi Realtime:</span>
-              <span className={`font-bold ${isRealtimeActive ? 'text-[#21845F]' : 'text-[#718078]'}`}>
-                {isRealtimeActive ? '🟢 Terhubung Seketika' : isConfigured ? '🟡 Siap Sinkron' : '⚪ Tidak Aktif'}
-              </span>
-            </div>
-            <div className="flex items-center justify-between py-1.5 border-b border-[#E9E4DC]/50">
-              <span className="text-[#718078]">Akun Pengguna:</span>
-              <span className="font-bold text-[#24312C] truncate max-w-[180px]">
-                {user ? user.email : 'Tamu / Akun Demo'}
-              </span>
-            </div>
-          </div>
-
-          <div className="pt-2">
-            {isConfigured ? (
-              <button
-                type="button"
-                onClick={handleManualSync}
-                disabled={isSyncing}
-                className="w-full py-2.5 px-3.5 rounded-xl bg-[#21845F] hover:bg-[#19694b] text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-                <span>{isSyncing ? 'Menyinkronkan...' : 'Sinkronkan Database Sekarang'}</span>
-              </button>
-            ) : (
-              <div className="p-2.5 rounded-xl bg-[#FAF6EF] border border-[#E9E4DC] text-[11px] text-[#718078] leading-relaxed">
-                Koneksi cloud diatur melalui file <strong>.env</strong> di root proyek.
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* Informasi Akun & Sesi */}
         <div className="bg-white rounded-3xl border border-[#E9E4DC] p-6 shadow-soft space-y-4 flex flex-col justify-between">
           <div>
@@ -340,7 +251,9 @@ function ProfilPemilikPage() {
               </div>
               <div className="flex items-center justify-between py-1.5 border-b border-[#E9E4DC]/50">
                 <span className="text-[#718078]">Email:</span>
-                <span className="font-bold text-[#24312C] truncate max-w-[180px]">{owner.email}</span>
+                <span className="font-bold text-[#24312C] truncate max-w-[180px]">
+                  {user ? user.email : owner.email}
+                </span>
               </div>
               <div className="flex items-center justify-between py-1.5 border-b border-[#E9E4DC]/50">
                 <span className="text-[#718078]">Kota / Domisili:</span>
@@ -368,7 +281,7 @@ function ProfilPemilikPage() {
                 className="flex-1 py-2.5 px-3 rounded-xl bg-[#21845F] hover:bg-[#19694b] text-white font-bold text-xs transition-colors flex items-center justify-center gap-1.5 text-center"
               >
                 <LogIn className="w-3.5 h-3.5" />
-                <span>Masuk / Daftar Akun Online</span>
+                <span>Masuk Akun</span>
               </Link>
             )}
 
@@ -376,49 +289,50 @@ function ProfilPemilikPage() {
               type="button"
               onClick={handleReset}
               className="py-2.5 px-3 rounded-xl bg-[#FAF6EF] hover:bg-[#FCE7E5] text-[#718078] hover:text-[#E11D48] font-bold text-xs border border-[#E9E4DC] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-              title="Reset data demo lokal"
+              title="Reset data ke setelan awal"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset Data</span>
             </button>
           </div>
         </div>
-      </div>
 
-      {/* Cadangan Data */}
-      <div className="bg-white rounded-3xl border border-[#E9E4DC] p-6 shadow-soft space-y-4">
-        <div className="flex items-center gap-2 pb-2 border-b border-[#E9E4DC]">
-          <Download className="w-5 h-5 text-[#21845F]" />
-          <h3 className="text-base font-extrabold text-[#24312C]">Cadangkan & Pulihkan Data</h3>
-        </div>
-        <p className="text-xs text-[#718078] leading-relaxed">
-          Data tersimpan di browser ini saja. Jika riwayat browser dibersihkan atau kamu berganti
-          perangkat, data bisa hilang. Unduh backup secara berkala, lalu impor kembali kapan saja.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            type="button"
-            onClick={handleExport}
-            className="flex-1 py-2.5 px-4 rounded-xl bg-[#21845F] hover:bg-[#19694b] text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <Download className="w-4 h-4" />
-            Unduh Backup (.json)
-          </button>
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="flex-1 py-2.5 px-4 rounded-xl bg-[#FAF6EF] hover:bg-[#E6F3E7] text-[#24312C] font-bold text-xs border border-[#E9E4DC] transition-colors flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <Upload className="w-4 h-4 text-[#21845F]" />
-            Impor dari Backup
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="application/json,.json"
-            onChange={handleFileSelected}
-            className="hidden"
-          />
+        {/* Cadangan Data */}
+        <div className="bg-white rounded-3xl border border-[#E9E4DC] p-6 shadow-soft space-y-4 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2 pb-2 border-b border-[#E9E4DC]">
+              <Download className="w-5 h-5 text-[#21845F]" />
+              <h3 className="text-base font-extrabold text-[#24312C]">Cadangkan & Pulihkan Data</h3>
+            </div>
+            <p className="text-xs text-[#718078] leading-relaxed mt-2">
+              Data tersimpan di perangkat ini. Unduh cadangan secara berkala dalam format JSON, lalu impor kembali kapan saja untuk memulihkan catatan satwa Anda.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <button
+              type="button"
+              onClick={handleExport}
+              className="flex-1 py-2.5 px-4 rounded-xl bg-[#21845F] hover:bg-[#19694b] text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Download className="w-4 h-4" />
+              Unduh Backup
+            </button>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex-1 py-2.5 px-4 rounded-xl bg-[#FAF6EF] hover:bg-[#E6F3E7] text-[#24312C] font-bold text-xs border border-[#E9E4DC] transition-colors flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Upload className="w-4 h-4 text-[#21845F]" />
+              Impor Backup
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/json,.json"
+              onChange={handleFileSelected}
+              className="hidden"
+            />
+          </div>
         </div>
       </div>
 
@@ -427,10 +341,10 @@ function ProfilPemilikPage() {
         onClose={() => setIsResetOpen(false)}
         onConfirm={() => {
           resetAllData()
-          showToast('Data demo berhasil direset ke setelan awal!', 'info')
+          showToast('Data berhasil direset ke setelan awal!', 'info')
         }}
-        title="Reset Data Demo?"
-        message="Semua data yang kamu tambahkan atau ubah akan dikembalikan ke data demo awal."
+        title="Reset Data?"
+        message="Semua data yang kamu tambahkan atau ubah akan dikembalikan ke setelan awal."
         confirmText="Ya, Reset"
       />
 

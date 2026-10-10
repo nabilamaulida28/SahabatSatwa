@@ -9,7 +9,6 @@ import {
   Calendar,
   LogIn,
   LogOut,
-  RefreshCw,
 } from 'lucide-react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useSatwaStore } from '../../lib/storage'
@@ -25,10 +24,8 @@ export const Topbar: React.FC = () => {
     markNotificationAsRead,
     markAllNotificationsAsRead,
     resetAllData,
-    syncWithSupabase,
-    isRealtimeActive,
   } = useSatwaStore()
-  const { user, isConfigured, isDemoUser, signOut } = useAuth()
+  const { user, signOut } = useAuth()
   const { showToast } = useToast()
   const navigate = useNavigate()
 
@@ -36,7 +33,6 @@ export const Topbar: React.FC = () => {
   const [isNotifOpen, setIsNotifOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isResetOpen, setIsResetOpen] = useState(false)
-  const [isSyncing, setIsSyncing] = useState(false)
 
   const notifRef = useRef<HTMLDivElement>(null)
   const profileRef = useRef<HTMLDivElement>(null)
@@ -71,13 +67,6 @@ export const Topbar: React.FC = () => {
   const handleResetData = () => {
     setIsProfileOpen(false)
     setIsResetOpen(true)
-  }
-
-  const handleManualSync = async () => {
-    setIsSyncing(true)
-    await syncWithSupabase()
-    setIsSyncing(false)
-    showToast('Sinkronisasi data Supabase berhasil!', 'success')
   }
 
   const handleLogout = async () => {
@@ -215,7 +204,7 @@ export const Topbar: React.FC = () => {
                       {owner.name}
                     </span>
                     <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-[#E6F3E7] text-[#21845F] leading-none">
-                      {isDemoUser ? 'Demo' : isConfigured ? 'Online' : 'Lokal'}
+                      {user ? 'Aktif' : 'Lokal'}
                     </span>
                   </div>
                   <span className="text-[10px] text-[#718078] leading-none">
@@ -242,18 +231,6 @@ export const Topbar: React.FC = () => {
                     <User className="w-4 h-4 text-[#21845F]" />
                     <span>Profil Pemilik</span>
                   </Link>
-
-                  {isConfigured && (
-                    <button
-                      type="button"
-                      onClick={handleManualSync}
-                      disabled={isSyncing}
-                      className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-[#24312C] hover:bg-[#FAF6EF] transition-colors text-left cursor-pointer"
-                    >
-                      <RefreshCw className={`w-4 h-4 text-[#21845F] ${isSyncing ? 'animate-spin' : ''}`} />
-                      <span>{isSyncing ? 'Menyinkronkan...' : 'Sinkronkan Database'}</span>
-                    </button>
-                  )}
 
                   <div className="my-1 border-t border-[#E9E4DC]" />
 
@@ -283,7 +260,7 @@ export const Topbar: React.FC = () => {
                     className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-[#718078] hover:text-[#E11D48] hover:bg-[#FCE7E5]/50 transition-colors text-left cursor-pointer"
                   >
                     <RotateCcw className="w-4 h-4 text-[#E11D48]" />
-                    <span>Reset Data Demo</span>
+                    <span>Reset Data</span>
                   </button>
                 </div>
               )}
@@ -297,10 +274,10 @@ export const Topbar: React.FC = () => {
         onClose={() => setIsResetOpen(false)}
         onConfirm={() => {
           resetAllData()
-          showToast('Data demo berhasil direset ke setelan awal!', 'info')
+          showToast('Data berhasil direset ke setelan awal!', 'info')
         }}
-        title="Reset Data Demo?"
-        message="Semua data yang kamu tambahkan atau ubah akan dikembalikan ke data demo awal."
+        title="Reset Data?"
+        message="Semua data yang kamu tambahkan atau ubah akan dikembalikan ke setelan awal."
         confirmText="Ya, Reset"
       />
 
