@@ -8,8 +8,10 @@ import {
   Bell,
   Scale,
   User,
+  LogIn,
 } from 'lucide-react'
 import { SidebarPetIllustration } from '../illustrations/SidebarPetIllustration'
+import { useAuth } from '../../lib/auth'
 
 interface NavItem {
   name: string
@@ -30,6 +32,7 @@ const NAV_ITEMS: NavItem[] = [
 export const Sidebar: React.FC = () => {
   const routerState = useRouterState()
   const currentPath = routerState.location.pathname
+  const { user } = useAuth()
 
   return (
     <aside className="hidden lg:flex flex-col w-64 bg-[#FFFFFF] border-r border-[#E9E4DC] h-screen sticky top-0 shrink-0 select-none">
@@ -51,7 +54,7 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Navigation Menu */}
-      <nav className="flex-1 px-4 py-3 space-y-1.5 overflow-y-auto">
+      <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto">
         {NAV_ITEMS.map((item) => {
           const isActive =
             item.to === '/'
@@ -78,13 +81,30 @@ export const Sidebar: React.FC = () => {
             </Link>
           )
         })}
+
+        {/* Auth item */}
+        <Link
+          to="/masuk"
+          className={`flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 ${
+            currentPath.startsWith('/masuk')
+              ? 'bg-[#E6F3E7] text-[#21845F] shadow-xs'
+              : 'text-[#718078] hover:bg-[#FAF6EF] hover:text-[#24312C]'
+          }`}
+        >
+          <LogIn
+            className={`w-5 h-5 shrink-0 transition-colors ${
+              currentPath.startsWith('/masuk') ? 'text-[#21845F]' : 'text-[#718078]'
+            }`}
+          />
+          <span className="truncate">{user ? 'Kelola Akun' : 'Masuk / Daftar'}</span>
+        </Link>
       </nav>
 
       {/* Sidebar Footer Illustration */}
-      <div className="p-4 m-3 mt-auto rounded-2xl bg-[#FAF6EF] border border-[#E9E4DC] text-center flex flex-col items-center">
-        <SidebarPetIllustration className="w-36 h-auto mb-1" />
-        <p className="text-xs font-semibold text-[#21845F] tracking-tight">
-          “Hewan sehat, hidup lebih bahagia ♡”
+      <div className="p-3 m-3 mt-auto rounded-2xl bg-[#FAF6EF] border border-[#E9E4DC] text-center flex flex-col items-center">
+        <SidebarPetIllustration className="w-32 h-auto mb-1" />
+        <p className="text-[11px] font-semibold text-[#21845F] tracking-tight">
+          “Hewan sehat, hidup bahagia ♡”
         </p>
       </div>
     </aside>

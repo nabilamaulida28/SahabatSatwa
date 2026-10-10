@@ -7,11 +7,13 @@ import {
   RotateCcw,
   CheckCheck,
   Calendar,
-  Sparkles,
-  ExternalLink,
+  LogIn,
+  LogOut,
+  RefreshCw,
 } from 'lucide-react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useSatwaStore } from '../../lib/storage'
+import { useAuth } from '../../lib/auth'
 import { SearchModal } from '../common/SearchModal'
 import { useToast } from '../common/Toast'
 import { ConfirmDialog } from '../common/ConfirmDialog'
@@ -23,7 +25,10 @@ export const Topbar: React.FC = () => {
     markNotificationAsRead,
     markAllNotificationsAsRead,
     resetAllData,
+    syncWithSupabase,
+    isRealtimeActive,
   } = useSatwaStore()
+  const { user, isConfigured, isDemoUser, signOut } = useAuth()
   const { showToast } = useToast()
   const navigate = useNavigate()
 
@@ -31,6 +36,7 @@ export const Topbar: React.FC = () => {
   const [isNotifOpen, setIsNotifOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isResetOpen, setIsResetOpen] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(false)
 
   const notifRef = useRef<HTMLDivElement>(null)
   const profileRef = useRef<HTMLDivElement>(null)
@@ -67,10 +73,24 @@ export const Topbar: React.FC = () => {
     setIsResetOpen(true)
   }
 
+  const handleManualSync = async () => {
+    setIsSyncing(true)
+    await syncWithSupabase()
+    setIsSyncing(false)
+    showToast('Sinkronisasi data Supabase berhasil!', 'success')
+  }
+
+  const handleLogout = async () => {
+    setIsProfileOpen(false)
+    await signOut()
+    showToast('Anda telah keluar dari akun.', 'info')
+    navigate({ to: '/masuk' })
+  }
+
   return (
     <>
-      <header className="sticky top-0 z-30 bg-[#FFFFFF]/90 backdrop-blur-md border-b border-[#E9E4DC] px-4 sm:px-6 lg:px-8 py-3.5">
-        <div className="flex items-center justify-between gap-4 max-w-7xl mx-auto">
+      <header className="sticky top-0 z-30 bg-[#FFFFFF]/90 backdrop-blur-md border-b border-[#E9E4DC] px-4 sm:px-6 lg:px-8 py-3">
+        <div className="flex items-center justify-between gap-3 max-w-7xl mx-auto">
           {/* Search Trigger Input (Desktop & Tablet) */}
           <div className="flex-1 max-w-md">
             <button
@@ -81,7 +101,7 @@ export const Topbar: React.FC = () => {
             >
               <div className="flex items-center gap-2.5 truncate">
                 <Search className="w-4 h-4 text-[#718078] group-hover:text-[#21845F] transition-colors shrink-0" />
-                <span className="truncate">Cari hewan, jenis, atau pemilik...</span>
+                <span className="truncate">Cari hewan, jadwal, atau vaksin...</span>
               </div>
               <span className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono bg-white rounded border border-[#E9E4DC] text-[#718078]">
                 Ctrl K
@@ -90,13 +110,13 @@ export const Topbar: React.FC = () => {
           </div>
 
           {/* Right Action Icons: Notifications & Profile */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Notification Dropdown */}
             <div className="relative" ref={notifRef}>
               <button
                 type="button"
                 onClick={() => setIsNotifOpen((prev) => !prev)}
-                className="relative p-2 rounded-xl text-[#718078] hover:text-[#24312C] hover:bg-[#FAF6EF] transition-colors"
+                className="relative p-2 rounded-xl text-[#718078] hover:text-[#24312C] hover:bg-[#FAF6EF] transition-colors cursor-pointer"
                 aria-label="Notifikasi"
               >
                 <Bell className="w-5 h-5" />
@@ -121,7 +141,7 @@ export const Topbar: React.FC = () => {
                     {unreadCount > 0 && (
                       <button
                         onClick={markAllNotificationsAsRead}
-                        className="text-[11px] font-semibold text-[#21845F] hover:underline flex items-center gap-1"
+                        className="text-[11px] font-semibold text-[#21845F] hover:underline flex items-center gap-1 cursor-pointer"
                       >
                         <CheckCheck className="w-3.5 h-3.5" />
                         Tandai semua dibaca
@@ -182,7 +202,7 @@ export const Topbar: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsProfileOpen((prev) => !prev)}
-                className="flex items-center gap-2.5 p-1 sm:px-2.5 sm:py-1.5 rounded-xl hover:bg-[#FAF6EF] transition-colors group cursor-pointer"
+                className="flex items-center gap-2 p-1 sm:px-2.5 sm:py-1 rounded-xl hover:bg-[#FAF6EF] transition-colors group cursor-pointer"
               >
                 <img
                   src={owner.avatar}
@@ -195,21 +215,23 @@ export const Topbar: React.FC = () => {
                       {owner.name}
                     </span>
                     <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-[#E6F3E7] text-[#21845F] leading-none">
-                      Pemilik
+                      {isDemoUser ? 'Demo' : isConfigured ? 'Online' : 'Lokal'}
                     </span>
                   </div>
                   <span className="text-[10px] text-[#718078] leading-none">
-                    {owner.email}
+                    {user?.email || owner.email}
                   </span>
                 </div>
                 <ChevronDown className="w-4 h-4 text-[#718078] hidden sm:block group-hover:text-[#24312C] transition-colors" />
               </button>
 
               {isProfileOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-soft-lg border border-[#E9E4DC] py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="px-4 py-2.5 border-b border-[#E9E4DC] sm:hidden">
+                <div className="absolute right-0 mt-2 w-60 bg-white rounded-2xl shadow-soft-lg border border-[#E9E4DC] py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-4 py-2.5 border-b border-[#E9E4DC]">
                     <p className="text-xs font-bold text-[#24312C]">{owner.name}</p>
-                    <p className="text-[10px] text-[#718078] truncate">{owner.email}</p>
+                    <p className="text-[10px] text-[#718078] truncate">
+                      {user?.email || owner.email}
+                    </p>
                   </div>
 
                   <Link
@@ -221,10 +243,44 @@ export const Topbar: React.FC = () => {
                     <span>Profil Pemilik</span>
                   </Link>
 
+                  {isConfigured && (
+                    <button
+                      type="button"
+                      onClick={handleManualSync}
+                      disabled={isSyncing}
+                      className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-[#24312C] hover:bg-[#FAF6EF] transition-colors text-left cursor-pointer"
+                    >
+                      <RefreshCw className={`w-4 h-4 text-[#21845F] ${isSyncing ? 'animate-spin' : ''}`} />
+                      <span>{isSyncing ? 'Menyinkronkan...' : 'Sinkronkan Database'}</span>
+                    </button>
+                  )}
+
+                  <div className="my-1 border-t border-[#E9E4DC]" />
+
+                  {user ? (
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors text-left cursor-pointer"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Keluar (Logout)</span>
+                    </button>
+                  ) : (
+                    <Link
+                      to="/masuk"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-[#21845F] hover:bg-[#FAF6EF] transition-colors"
+                    >
+                      <LogIn className="w-4 h-4" />
+                      <span>Masuk / Daftar Akun</span>
+                    </Link>
+                  )}
+
                   <button
                     type="button"
                     onClick={handleResetData}
-                    className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-[#718078] hover:text-[#E11D48] hover:bg-[#FCE7E5]/50 transition-colors text-left"
+                    className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-[#718078] hover:text-[#E11D48] hover:bg-[#FCE7E5]/50 transition-colors text-left cursor-pointer"
                   >
                     <RotateCcw className="w-4 h-4 text-[#E11D48]" />
                     <span>Reset Data Demo</span>

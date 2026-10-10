@@ -10,8 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DaftarRouteImport } from './routes/daftar'
 import { Route as HewanRouteImport } from './routes/hewan'
 import { Route as JadwalRouteImport } from './routes/jadwal'
+import { Route as MasukRouteImport } from './routes/masuk'
 import { Route as NutrisiBeratRouteImport } from './routes/nutrisi-berat'
 import { Route as PengingatRouteImport } from './routes/pengingat'
 import { Route as ProfilRouteImport } from './routes/profil'
@@ -22,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DaftarRoute = DaftarRouteImport.update({
+  id: '/daftar',
+  path: '/daftar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HewanRoute = HewanRouteImport.update({
   id: '/hewan',
   path: '/hewan',
@@ -30,6 +37,11 @@ const HewanRoute = HewanRouteImport.update({
 const JadwalRoute = JadwalRouteImport.update({
   id: '/jadwal',
   path: '/jadwal',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MasukRoute = MasukRouteImport.update({
+  id: '/masuk',
+  path: '/masuk',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NutrisiBeratRoute = NutrisiBeratRouteImport.update({
@@ -55,8 +67,10 @@ const RiwayatRoute = RiwayatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/daftar': typeof DaftarRoute
   '/hewan': typeof HewanRoute
   '/jadwal': typeof JadwalRoute
+  '/masuk': typeof MasukRoute
   '/nutrisi-berat': typeof NutrisiBeratRoute
   '/pengingat': typeof PengingatRoute
   '/profil': typeof ProfilRoute
@@ -64,8 +78,10 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/daftar': typeof DaftarRoute
   '/hewan': typeof HewanRoute
   '/jadwal': typeof JadwalRoute
+  '/masuk': typeof MasukRoute
   '/nutrisi-berat': typeof NutrisiBeratRoute
   '/pengingat': typeof PengingatRoute
   '/profil': typeof ProfilRoute
@@ -74,8 +90,10 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/daftar': typeof DaftarRoute
   '/hewan': typeof HewanRoute
   '/jadwal': typeof JadwalRoute
+  '/masuk': typeof MasukRoute
   '/nutrisi-berat': typeof NutrisiBeratRoute
   '/pengingat': typeof PengingatRoute
   '/profil': typeof ProfilRoute
@@ -85,8 +103,10 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/daftar'
     | '/hewan'
     | '/jadwal'
+    | '/masuk'
     | '/nutrisi-berat'
     | '/pengingat'
     | '/profil'
@@ -94,8 +114,10 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/daftar'
     | '/hewan'
     | '/jadwal'
+    | '/masuk'
     | '/nutrisi-berat'
     | '/pengingat'
     | '/profil'
@@ -103,8 +125,10 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/daftar'
     | '/hewan'
     | '/jadwal'
+    | '/masuk'
     | '/nutrisi-berat'
     | '/pengingat'
     | '/profil'
@@ -113,8 +137,10 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DaftarRoute: typeof DaftarRoute
   HewanRoute: typeof HewanRoute
   JadwalRoute: typeof JadwalRoute
+  MasukRoute: typeof MasukRoute
   NutrisiBeratRoute: typeof NutrisiBeratRoute
   PengingatRoute: typeof PengingatRoute
   ProfilRoute: typeof ProfilRoute
@@ -130,6 +156,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/daftar': {
+      id: '/daftar'
+      path: '/daftar'
+      fullPath: '/daftar'
+      preLoaderRoute: typeof DaftarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/hewan': {
       id: '/hewan'
       path: '/hewan'
@@ -142,6 +175,13 @@ declare module '@tanstack/react-router' {
       path: '/jadwal'
       fullPath: '/jadwal'
       preLoaderRoute: typeof JadwalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/masuk': {
+      id: '/masuk'
+      path: '/masuk'
+      fullPath: '/masuk'
+      preLoaderRoute: typeof MasukRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/nutrisi-berat': {
@@ -177,8 +217,10 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DaftarRoute: DaftarRoute,
   HewanRoute: HewanRoute,
   JadwalRoute: JadwalRoute,
+  MasukRoute: MasukRoute,
   NutrisiBeratRoute: NutrisiBeratRoute,
   PengingatRoute: PengingatRoute,
   ProfilRoute: ProfilRoute,

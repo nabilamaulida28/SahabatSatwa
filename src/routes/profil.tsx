@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useSatwaStore } from '../lib/storage'
+import { useAuth } from '../lib/auth'
 import { EditProfileModal } from '../components/profile/EditProfileModal'
 import { ProfilePetsIllustration } from '../components/illustrations/ProfilePetsIllustration'
 import { useToast } from '../components/common/Toast'
@@ -23,6 +24,11 @@ import {
   Download,
   Upload,
   Camera,
+  Database,
+  Zap,
+  LogIn,
+  LogOut,
+  RefreshCw,
 } from 'lucide-react'
 import { ChangeAvatarModal } from '../components/profile/ChangeAvatarModal'
 
@@ -40,14 +46,25 @@ function ProfilPemilikPage() {
     resetAllData,
     exportData,
     importData,
+    syncWithSupabase,
+    isRealtimeActive,
   } = useSatwaStore()
+  const { user, isConfigured, isDemoUser, signOut } = useAuth()
   const { showToast } = useToast()
 
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isResetOpen, setIsResetOpen] = useState(false)
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(false)
   const [pendingImport, setPendingImport] = useState<unknown | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleManualSync = async () => {
+    setIsSyncing(true)
+    await syncWithSupabase()
+    setIsSyncing(false)
+    showToast('Sinkronisasi database Supabase selesai!', 'success')
+  }
 
   const handleSaveProfile = (updated: OwnerProfile) => {
     saveOwner(updated)
@@ -216,60 +233,153 @@ function ProfilPemilikPage() {
         </div>
       </div>
 
-      {/* Account Info and Storage Details */}
+      {/* Account Info and Supabase Cloud Sync */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Info Akun */}
+        {/* Supabase Cloud Connection Card */}
         <div className="bg-white rounded-3xl border border-[#E9E4DC] p-6 shadow-soft space-y-4">
-          <div className="flex items-center gap-2 pb-2 border-b border-[#E9E4DC]">
-            <ShieldCheck className="w-5 h-5 text-[#21845F]" />
-            <h3 className="text-base font-extrabold text-[#24312C]">Informasi Akun</h3>
+          <div className="flex items-center justify-between pb-3 border-b border-[#E9E4DC]">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[#21845F]/10 text-[#21845F] flex items-center justify-center">
+                <Database className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-extrabold text-[#24312C] leading-none">Database & Realtime</h3>
+                <p className="text-[11px] text-[#718078] mt-1">Penyimpanan Online Supabase</p>
+              </div>
+            </div>
+
+            <span
+              className={`px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5 ${
+                isConfigured
+                  ? 'bg-[#E7F6ED] text-[#196447]'
+                  : 'bg-amber-50 text-amber-800'
+              }`}
+            >
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isConfigured ? 'bg-[#21845F] animate-pulse' : 'bg-amber-500'
+                }`}
+              />
+              {isConfigured ? 'Online' : 'Lokal'}
+            </span>
           </div>
 
-          <div className="space-y-3 text-xs sm:text-sm">
-            <div className="flex items-center justify-between py-2 border-b border-[#E9E4DC]/50">
-              <span className="text-[#718078]">Status Akun:</span>
-              <span className="font-bold text-[#21845F] flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-[#21845F]" />
-                Aktif (Demo Mode)
+          <div className="space-y-2.5 text-xs">
+            <div className="flex items-center justify-between py-1.5 border-b border-[#E9E4DC]/50">
+              <span className="text-[#718078]">Status Database:</span>
+              <span className="font-bold text-[#24312C] flex items-center gap-1">
+                {isConfigured ? (
+                  <>
+                    <Zap className="w-3.5 h-3.5 text-[#21845F] fill-current" />
+                    Supabase PostgreSQL (Aktif)
+                  </>
+                ) : (
+                  'Browser LocalStorage'
+                )}
               </span>
             </div>
-            <div className="flex items-center justify-between py-2 border-b border-[#E9E4DC]/50">
-              <span className="text-[#718078]">Penyimpanan Data:</span>
-              <span className="font-bold text-[#24312C]">Browser LocalStorage</span>
-            </div>
-            <div className="flex items-center justify-between py-2 border-b border-[#E9E4DC]/50">
-              <span className="text-[#718078]">Alamat Lengkap:</span>
-              <span className="font-bold text-[#24312C] text-right truncate max-w-[200px]">
-                {owner.address}
+            <div className="flex items-center justify-between py-1.5 border-b border-[#E9E4DC]/50">
+              <span className="text-[#718078]">Sinkronisasi Realtime:</span>
+              <span className={`font-bold ${isRealtimeActive ? 'text-[#21845F]' : 'text-[#718078]'}`}>
+                {isRealtimeActive ? '🟢 Terhubung Seketika' : isConfigured ? '🟡 Siap Sinkron' : '⚪ Tidak Aktif'}
               </span>
             </div>
-            <div className="flex items-center justify-between py-2">
-              <span className="text-[#718078]">Bahasa Aplikasi:</span>
-              <span className="font-bold text-[#24312C]">Bahasa Indonesia</span>
+            <div className="flex items-center justify-between py-1.5 border-b border-[#E9E4DC]/50">
+              <span className="text-[#718078]">Akun Pengguna:</span>
+              <span className="font-bold text-[#24312C] truncate max-w-[180px]">
+                {user ? user.email : 'Tamu / Akun Demo'}
+              </span>
             </div>
+          </div>
+
+          <div className="pt-2">
+            {isConfigured ? (
+              <button
+                type="button"
+                onClick={handleManualSync}
+                disabled={isSyncing}
+                className="w-full py-2.5 px-3.5 rounded-xl bg-[#21845F] hover:bg-[#19694b] text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                <span>{isSyncing ? 'Menyinkronkan...' : 'Sinkronkan Database Sekarang'}</span>
+              </button>
+            ) : (
+              <div className="p-2.5 rounded-xl bg-[#FAF6EF] border border-[#E9E4DC] text-[11px] text-[#718078] leading-relaxed">
+                Koneksi cloud diatur melalui file <strong>.env</strong> di root proyek.
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Demo Data Management */}
+        {/* Informasi Akun & Sesi */}
         <div className="bg-white rounded-3xl border border-[#E9E4DC] p-6 shadow-soft space-y-4 flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-2 pb-2 border-b border-[#E9E4DC]">
-              <Info className="w-5 h-5 text-[#8B5CF6]" />
-              <h3 className="text-base font-extrabold text-[#24312C]">Pengaturan Data Demo</h3>
+            <div className="flex items-center justify-between pb-3 border-b border-[#E9E4DC]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#EEE6FA] text-[#8B5CF6] flex items-center justify-center">
+                  <User className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-[#24312C] leading-none">Sesi Akun</h3>
+                  <p className="text-[11px] text-[#718078] mt-1">Status Login & Akses</p>
+                </div>
+              </div>
+
+              <Link
+                to="/masuk"
+                className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FAF6EF] hover:bg-[#E6F3E7] text-[#21845F] border border-[#E9E4DC] transition-colors"
+              >
+                {user ? 'Ganti Akun' : 'Masuk'}
+              </Link>
             </div>
-            <p className="text-xs text-[#718078] mt-3 leading-relaxed">
-              Aplikasi ini saat ini berjalan secara lokal menggunakan penyimpanan peramban (LocalStorage) tanpa koneksi server backend multi-pengguna. Anda bebas menambah, mengedit, atau menghapus data.
-            </p>
+
+            <div className="space-y-2.5 text-xs mt-3">
+              <div className="flex items-center justify-between py-1.5 border-b border-[#E9E4DC]/50">
+                <span className="text-[#718078]">Nama Lengkap:</span>
+                <span className="font-bold text-[#24312C]">{owner.name}</span>
+              </div>
+              <div className="flex items-center justify-between py-1.5 border-b border-[#E9E4DC]/50">
+                <span className="text-[#718078]">Email:</span>
+                <span className="font-bold text-[#24312C] truncate max-w-[180px]">{owner.email}</span>
+              </div>
+              <div className="flex items-center justify-between py-1.5 border-b border-[#E9E4DC]/50">
+                <span className="text-[#718078]">Kota / Domisili:</span>
+                <span className="font-bold text-[#24312C]">{owner.city}</span>
+              </div>
+            </div>
           </div>
 
-          <div className="pt-4 border-t border-[#E9E4DC]">
+          <div className="pt-2 flex items-center gap-2">
+            {user ? (
+              <button
+                type="button"
+                onClick={() => {
+                  signOut()
+                  showToast('Anda telah keluar dari akun.', 'info')
+                }}
+                className="flex-1 py-2.5 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs border border-rose-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Keluar Akun</span>
+              </button>
+            ) : (
+              <Link
+                to="/masuk"
+                className="flex-1 py-2.5 px-3 rounded-xl bg-[#21845F] hover:bg-[#19694b] text-white font-bold text-xs transition-colors flex items-center justify-center gap-1.5 text-center"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Masuk / Daftar Akun Online</span>
+              </Link>
+            )}
+
             <button
               type="button"
               onClick={handleReset}
-              className="w-full py-2.5 px-4 rounded-xl bg-[#FAF6EF] hover:bg-[#FCE7E5] text-[#E11D48] font-bold text-xs border border-[#E9E4DC] hover:border-[#E11D48]/30 transition-colors flex items-center justify-center gap-2"
+              className="py-2.5 px-3 rounded-xl bg-[#FAF6EF] hover:bg-[#FCE7E5] text-[#718078] hover:text-[#E11D48] font-bold text-xs border border-[#E9E4DC] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+              title="Reset data demo lokal"
             >
-              <RotateCcw className="w-4 h-4" />
-              <span>Reset Kembali ke Data Awal Demo</span>
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset Data</span>
             </button>
           </div>
         </div>

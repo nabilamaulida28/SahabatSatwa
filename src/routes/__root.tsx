@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-router'
 import * as React from 'react'
 import { AppLayout } from '../components/layout/AppLayout'
+import { AuthProvider } from '../lib/auth'
 import appCss from '../styles/app.css?url'
 import { NotFoundPage } from '../components/common/NotFoundPage'
 
@@ -62,9 +63,11 @@ function RootComponent() {
         <HeadContent />
       </head>
       <body className="bg-[#FAF6EF] text-[#24312C] font-sans antialiased min-h-screen">
-        <AppLayout>
-          <Outlet />
-        </AppLayout>
+        <AuthProvider>
+          <AppLayout>
+            <Outlet />
+          </AppLayout>
+        </AuthProvider>
         <ScrollRestoration />
         <Scripts />
       </body>

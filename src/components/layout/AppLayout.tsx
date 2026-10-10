@@ -1,16 +1,77 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
 import { MobileNav } from './MobileNav'
 import { ToastProvider } from '../common/Toast'
 import { PawPrint } from 'lucide-react'
-import { Link } from '@tanstack/react-router'
+import { Link, useRouterState, useNavigate } from '@tanstack/react-router'
+import { useAuth } from '../../lib/auth'
 
 interface AppLayoutProps {
   children: React.ReactNode
 }
 
 export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
+  const routerState = useRouterState()
+  const currentPath = routerState.location.pathname
+  const navigate = useNavigate()
+  const { user, isLoading } = useAuth()
+
+  const isAuthRoute = currentPath === '/masuk' || currentPath === '/daftar'
+
+  useEffect(() => {
+    if (isLoading) return
+
+    if (!user && !isAuthRoute) {
+      navigate({ to: '/masuk' })
+    } else if (user && isAuthRoute) {
+      navigate({ to: '/' })
+    }
+  }, [user, isLoading, isAuthRoute, navigate])
+
+  // While checking auth status
+  if (isLoading) {
+    return (
+      <ToastProvider>
+        <div className="min-h-screen bg-[#FAF6EF] flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-16 h-16 rounded-3xl bg-[#E6F3E7] text-[#21845F] flex items-center justify-center shadow-soft animate-bounce mb-4">
+            <PawPrint className="w-8 h-8 fill-[#21845F]/20" />
+          </div>
+          <h2 className="text-xl font-extrabold text-[#24312C] font-display">SahabatSatwa</h2>
+          <p className="text-xs text-[#718078] mt-1">Memeriksa sesi login...</p>
+        </div>
+      </ToastProvider>
+    )
+  }
+
+  // If not logged in and not on auth route yet, show brief loading screen while redirecting
+  if (!user && !isAuthRoute) {
+    return (
+      <ToastProvider>
+        <div className="min-h-screen bg-[#FAF6EF] flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-16 h-16 rounded-3xl bg-[#E6F3E7] text-[#21845F] flex items-center justify-center shadow-soft animate-pulse mb-4">
+            <PawPrint className="w-8 h-8 fill-[#21845F]/20" />
+          </div>
+          <p className="text-xs text-[#718078]">Mengarahkan ke halaman masuk...</p>
+        </div>
+      </ToastProvider>
+    )
+  }
+
+  // If on login/register route, render dedicated clean auth layout
+  if (isAuthRoute) {
+    return (
+      <ToastProvider>
+        <div className="min-h-screen bg-[#FAF6EF] flex flex-col justify-center">
+          <main className="w-full mx-auto">
+            {children}
+          </main>
+        </div>
+      </ToastProvider>
+    )
+  }
+
+  // Main Authenticated Dashboard Layout
   return (
     <ToastProvider>
       <div className="min-h-screen bg-[#FAF6EF] flex">
