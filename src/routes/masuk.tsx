@@ -31,13 +31,6 @@ function MasukPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
-  // Jika sudah login, langsung arahkan ke dashboard
-  React.useEffect(() => {
-    if (user) {
-      navigate({ to: '/' })
-    }
-  }, [user, navigate])
-
   // Login form state
   const [loginEmail, setLoginEmail] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
@@ -81,11 +74,6 @@ function MasukPage() {
 
     if (regPassword.length < 6) {
       showToast('Kata sandi minimal 6 karakter.', 'warning')
-      return
-    }
-
-    if (!isConfigured) {
-      showToast('Layanan pendaftaran akun saat ini belum dapat terhubung.', 'error')
       return
     }
 
@@ -153,19 +141,19 @@ function MasukPage() {
               <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-amber-300">
                 <CheckCircle2 className="w-3.5 h-3.5" />
               </div>
-              <span>Penyimpanan aman dan terintegrasi</span>
+              <span>Pengingat otomatis jadwal vaksin & kontrol dokter</span>
             </div>
             <div className="flex items-center gap-2.5 text-xs text-white/90">
               <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-amber-300">
                 <CheckCircle2 className="w-3.5 h-3.5" />
               </div>
-              <span>Realtime sync seketika tanpa refresh</span>
+              <span>Pantau grafik berat badan & pola makan harian</span>
             </div>
             <div className="flex items-center gap-2.5 text-xs text-white/90">
               <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-amber-300">
                 <CheckCircle2 className="w-3.5 h-3.5" />
               </div>
-              <span>Foto profil custom & foto kamera langsung</span>
+              <span>Bisa kelola banyak anabul dalam satu tempat</span>
             </div>
           </div>
 
@@ -221,11 +209,10 @@ function MasukPage() {
                 <button
                   type="button"
                   onClick={() => setTab('masuk')}
-                  className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                    tab === 'masuk'
-                      ? 'bg-white text-[#21845F] shadow-sm'
-                      : 'text-[#718078] hover:text-[#24312C]'
-                  }`}
+                  className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${tab === 'masuk'
+                    ? 'bg-white text-[#21845F] shadow-sm'
+                    : 'text-[#718078] hover:text-[#24312C]'
+                    }`}
                 >
                   <LogIn className="w-4 h-4" />
                   Masuk Akun
@@ -233,11 +220,10 @@ function MasukPage() {
                 <button
                   type="button"
                   onClick={() => setTab('daftar')}
-                  className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                    tab === 'daftar'
-                      ? 'bg-white text-[#21845F] shadow-sm'
-                      : 'text-[#718078] hover:text-[#24312C]'
-                  }`}
+                  className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${tab === 'daftar'
+                    ? 'bg-white text-[#21845F] shadow-sm'
+                    : 'text-[#718078] hover:text-[#24312C]'
+                    }`}
                 >
                   <UserPlus className="w-4 h-4" />
                   Daftar Baru

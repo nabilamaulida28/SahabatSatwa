@@ -10,6 +10,17 @@ import { OwnerProfile } from '../types'
 import { INITIAL_OWNER } from '../data/initialData'
 import { rowToProfile, profileToRow } from './supabaseSync'
 
+const DEFAULT_CLEAN_PROFILE: OwnerProfile = {
+  id: '',
+  name: 'Pemilik Hewan',
+  email: '',
+  phone: '',
+  city: 'Jakarta',
+  address: '',
+  bio: 'Penyayang hewan.',
+  avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80',
+}
+
 export interface AuthContextType {
   user: User | null
   session: Session | null
@@ -31,13 +42,43 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 const DEMO_USER_KEY = 'satwa_demo_session'
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<User | null>(() => {
+    if (typeof window === 'undefined') return null
+    const demoActive = window.localStorage.getItem(DEMO_USER_KEY)
+    if (demoActive === 'true') {
+      const saved = window.localStorage.getItem('satwa_user_data')
+      let email = 'nabila@sahabatsatwa.id'
+      let name = 'Nabila Maulida'
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          email = parsed.email || email
+          name = parsed.name || name
+        } catch {}
+      }
+      return {
+        id: 'user-' + email.replace(/[^a-zA-Z0-9]/g, '_'),
+        email,
+        user_metadata: { full_name: name },
+        app_metadata: {},
+        aud: 'authenticated',
+        created_at: new Date().toISOString(),
+      }
+    }
+    return null
+  })
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<OwnerProfile | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true
+    return window.localStorage.getItem(DEMO_USER_KEY) !== 'true'
+  })
   const [isConfigured, setIsConfigured] = useState(false)
   const [isOnline, setIsOnline] = useState(true)
-  const [isDemoUser, setIsDemoUser] = useState(false)
+  const [isDemoUser, setIsDemoUser] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false
+    return window.localStorage.getItem(DEMO_USER_KEY) === 'true'
+  })
   const [realtimeStatus, setRealtimeStatus] = useState<'connected' | 'connecting' | 'disconnected' | 'demo'>('connecting')
 
   // Check online status
@@ -82,10 +123,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             } else {
               // Create initial profile row
               const newProf: OwnerProfile = {
-                ...INITIAL_OWNER,
+                ...DEFAULT_CLEAN_PROFILE,
                 id: data.session.user.id,
-                email: data.session.user.email || INITIAL_OWNER.email,
-                name: (data.session.user.user_metadata?.full_name as string) || INITIAL_OWNER.name,
+                email: data.session.user.email || '',
+                name: (data.session.user.user_metadata?.full_name as string) || data.session.user.email?.split('@')[0] || 'Pemilik Hewan',
               }
               await supabase.from('profiles').insert(profileToRow(newProf, data.session.user.id))
               setProfile(newProf)
@@ -124,29 +165,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false)
   }, [])
 
-  function initDemoUser() {
+  function initDemoUser(emailOverride?: string, nameOverride?: string) {
     setIsDemoUser(true)
     setRealtimeStatus('demo')
+
+    let email = emailOverride
+    let name = nameOverride
+
+    if (typeof window !== 'undefined') {
+      if (!email) {
+        const saved = window.localStorage.getItem('satwa_user_data')
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved)
+            email = parsed.email
+            name = parsed.name
+          } catch {}
+        }
+      }
+    }
+
+    email = email || 'nabila@sahabatsatwa.id'
+    name = name || 'Nabila Maulida'
+
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('satwa_user_data', JSON.stringify({ email, name }))
+      window.localStorage.setItem(DEMO_USER_KEY, 'true')
+    }
+
     const mockUser: any = {
-      id: 'demo-user-123',
-      email: 'nabila@sahabatsatwa.id',
-      user_metadata: { full_name: 'Nabila Maulida' },
+      id: 'user-' + email.replace(/[^a-zA-Z0-9]/g, '_'),
+      email,
+      user_metadata: { full_name: name },
       app_metadata: {},
       aud: 'authenticated',
       created_at: new Date().toISOString(),
     }
     setUser(mockUser)
     setSession({
-      access_token: 'demo_token',
+      access_token: 'local_token',
       token_type: 'bearer',
       user: mockUser,
       expires_in: 3600,
-      refresh_token: 'demo_refresh',
+      refresh_token: 'local_refresh',
     })
-    setProfile(INITIAL_OWNER)
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(DEMO_USER_KEY, 'true')
-    }
+    setProfile({
+      ...INITIAL_OWNER,
+      name,
+      email,
+    })
   }
 
   // Setup auth listener
@@ -180,10 +247,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setProfile(rowToProfile(profData, currentSession.user.email))
           } else {
             const newProf: OwnerProfile = {
-              ...INITIAL_OWNER,
+              ...DEFAULT_CLEAN_PROFILE,
               id: currentSession.user.id,
-              email: currentSession.user.email || INITIAL_OWNER.email,
-              name: (currentSession.user.user_metadata?.full_name as string) || INITIAL_OWNER.name,
+              email: currentSession.user.email || '',
+              name: (currentSession.user.user_metadata?.full_name as string) || currentSession.user.email?.split('@')[0] || 'Pemilik Hewan',
             }
             await supabase.from('profiles').insert(profileToRow(newProf, currentSession.user.id))
             setProfile(newProf)
@@ -211,7 +278,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshProfile = useCallback(async () => {
     if (!user) return
     if (isDemoUser) {
-      setProfile(INITIAL_OWNER)
+      const email = user.email || INITIAL_OWNER.email
+      const name = (user.user_metadata?.full_name as string) || INITIAL_OWNER.name
+      setProfile({
+        ...INITIAL_OWNER,
+        email,
+        name,
+      })
       return
     }
     const supabase = getSupabaseClient()
@@ -231,12 +304,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     const supabase = getSupabaseClient()
     if (!supabase || !isConfigured) {
-      // Offline / Demo fallback
-      if (email.toLowerCase() === 'nabila@sahabatsatwa.id' || email.includes('@')) {
-        initDemoUser()
+      // Offline / Local fallback
+      if (email.trim().includes('@')) {
+        initDemoUser(email.trim())
         return { success: true }
       }
-      return { success: false, error: 'Koneksi akun belum aktif. Silakan coba beberapa saat lagi.' }
+      return { success: false, error: 'Format email tidak valid.' }
     }
 
     try {
@@ -271,9 +344,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   ): Promise<{ success: boolean; error?: string }> => {
     const supabase = getSupabaseClient()
     if (!supabase || !isConfigured) {
+      if (email.trim().includes('@')) {
+        initDemoUser(email.trim(), fullName.trim())
+        return { success: true }
+      }
       return {
         success: false,
-        error: 'Layanan pendaftaran akun saat ini belum dapat terhubung.',
+        error: 'Format email tidak valid.',
       }
     }
 
@@ -295,7 +372,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data.user) {
         // Create initial profile
         const newProf: OwnerProfile = {
-          ...INITIAL_OWNER,
+          ...DEFAULT_CLEAN_PROFILE,
           id: data.user.id,
           name: fullName.trim() || 'Pemilik Hewan',
           email: data.user.email || email.trim(),
@@ -335,6 +412,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem(DEMO_USER_KEY)
+      window.localStorage.removeItem('satwa_user_data')
+      window.localStorage.removeItem('sahabatsatwa_owner_v1')
+      window.localStorage.removeItem('sahabatsatwa_pets_v1')
+      window.localStorage.removeItem('sahabatsatwa_schedules_v1')
+      window.localStorage.removeItem('sahabatsatwa_health_v1')
+      window.localStorage.removeItem('sahabatsatwa_reminders_v1')
+      window.localStorage.removeItem('sahabatsatwa_weight_v1')
+      window.localStorage.removeItem('sahabatsatwa_feeding_v1')
+      window.localStorage.removeItem('sahabatsatwa_notifications_v1')
+      window.localStorage.removeItem('sahabatsatwa_read_notifs_v1')
+      window.dispatchEvent(new CustomEvent('sahabatsatwa_update', { detail: { key: 'all' } }))
     }
     setUser(null)
     setSession(null)
