@@ -24,6 +24,8 @@ export const Topbar: React.FC = () => {
     markNotificationAsRead,
     markAllNotificationsAsRead,
     resetAllData,
+    isRealtimeActive,
+    syncStatus,
   } = useSatwaStore()
   const { user, signOut } = useAuth()
   const { showToast } = useToast()
@@ -100,6 +102,40 @@ export const Topbar: React.FC = () => {
 
           {/* Right Action Icons: Notifications & Profile */}
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Realtime Live Status Badge */}
+            <div
+              className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-all select-none ${
+                isRealtimeActive
+                  ? 'bg-[#E6F3E7] text-[#21845F] border-[#21845F]/20'
+                  : syncStatus === 'syncing'
+                  ? 'bg-amber-50 text-amber-700 border-amber-200 animate-pulse'
+                  : 'bg-[#FAF6EF] text-[#718078] border-[#E9E4DC]'
+              }`}
+              title={
+                isRealtimeActive
+                  ? 'Database terhubung & aktif secara Realtime (Supabase Cloud)'
+                  : syncStatus === 'syncing'
+                  ? 'Sedang menyinkronkan data...'
+                  : 'Mode Penyimpanan Lokal'
+              }
+            >
+              <span className="relative flex h-2 w-2">
+                {isRealtimeActive && (
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#21845F] opacity-75"></span>
+                )}
+                <span
+                  className={`relative inline-flex rounded-full h-2 w-2 ${
+                    isRealtimeActive
+                      ? 'bg-[#21845F]'
+                      : syncStatus === 'syncing'
+                      ? 'bg-amber-500'
+                      : 'bg-[#718078]'
+                  }`}
+                ></span>
+              </span>
+              <span>{isRealtimeActive ? 'Realtime Online' : syncStatus === 'syncing' ? 'Sinkronisasi...' : 'Lokal'}</span>
+            </div>
+
             {/* Notification Dropdown */}
             <div className="relative" ref={notifRef}>
               <button
@@ -217,8 +253,20 @@ export const Topbar: React.FC = () => {
               {isProfileOpen && (
                 <div className="absolute right-0 mt-2 w-60 bg-white rounded-2xl shadow-soft-lg border border-[#E9E4DC] py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
                   <div className="px-4 py-2.5 border-b border-[#E9E4DC]">
-                    <p className="text-xs font-bold text-[#24312C]">{owner.name}</p>
-                    <p className="text-[10px] text-[#718078] truncate">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-bold text-[#24312C] truncate">{owner.name}</p>
+                      <span
+                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
+                          isRealtimeActive
+                            ? 'bg-[#E6F3E7] text-[#21845F]'
+                            : 'bg-[#FAF6EF] text-[#718078]'
+                        }`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${isRealtimeActive ? 'bg-[#21845F]' : 'bg-[#718078]'}`} />
+                        {isRealtimeActive ? 'Realtime' : 'Lokal'}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-[#718078] truncate mt-0.5">
                       {user?.email || owner.email}
                     </p>
                   </div>

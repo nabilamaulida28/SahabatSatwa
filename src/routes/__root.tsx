@@ -5,12 +5,16 @@ import {
   createRootRoute,
   HeadContent,
   Scripts,
+  ErrorComponentProps,
 } from '@tanstack/react-router'
 import * as React from 'react'
 import { AppLayout } from '../components/layout/AppLayout'
 import { AuthProvider } from '../lib/auth'
 import appCss from '../styles/app.css?url'
 import { NotFoundPage } from '../components/common/NotFoundPage'
+
+import { ToastProvider } from '../components/common/Toast'
+import { SatwaStoreProvider } from '../lib/storage'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -54,7 +58,55 @@ export const Route = createRootRoute({
   }),
   component: RootComponent,
   notFoundComponent: NotFoundPage,
+  errorComponent: RootErrorComponent,
 })
+
+function RootErrorComponent({ error, reset }: ErrorComponentProps) {
+  React.useEffect(() => {
+    if (error) {
+      console.error('Root error boundary caught:', error)
+    }
+  }, [error])
+
+  const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : ''
+
+  return (
+    <div className="min-h-screen bg-[#FAF6EF] flex flex-col items-center justify-center p-6 text-center">
+      <div className="w-16 h-16 rounded-3xl bg-[#E6F3E7] text-[#21845F] flex items-center justify-center shadow-soft mb-4">
+        <span className="text-2xl font-bold">🐾</span>
+      </div>
+      <h2 className="text-xl font-extrabold text-[#24312C]">Terjadi Kendala Memuat Halaman</h2>
+      <p className="text-xs text-[#718078] mt-1 max-w-sm leading-relaxed">
+        Sistem mendeteksi kendala pada navigasi atau render komponen. Silakan coba klik tombol di bawah untuk menyegarkan tampilan.
+      </p>
+      {errorMessage && (
+        <p className="text-[11px] text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-lg mt-3 max-w-md break-all font-mono">
+          {errorMessage}
+        </p>
+      )}
+      <div className="mt-5 flex items-center gap-3">
+        {reset && (
+          <button
+            type="button"
+            onClick={() => reset()}
+            className="px-5 py-2.5 rounded-xl bg-[#21845F] hover:bg-[#19694b] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+          >
+            Coba Lagi
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof window !== 'undefined') window.location.href = '/'
+          }}
+          className="px-5 py-2.5 rounded-xl bg-white hover:bg-[#FAF6EF] text-[#24312C] border border-[#E9E4DC] text-xs font-bold transition-all shadow-xs cursor-pointer"
+        >
+          Buka Beranda
+        </button>
+      </div>
+    </div>
+  )
+}
 
 function RootComponent() {
   return (
@@ -63,11 +115,15 @@ function RootComponent() {
         <HeadContent />
       </head>
       <body className="bg-[#FAF6EF] text-[#24312C] font-sans antialiased min-h-screen">
-        <AuthProvider>
-          <AppLayout>
-            <Outlet />
-          </AppLayout>
-        </AuthProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <SatwaStoreProvider>
+              <AppLayout>
+                <Outlet />
+              </AppLayout>
+            </SatwaStoreProvider>
+          </AuthProvider>
+        </ToastProvider>
         <ScrollRestoration />
         <Scripts />
       </body>
