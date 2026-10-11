@@ -36,13 +36,17 @@ function RiwayatKesehatanPage() {
   const [recordToDelete, setRecordToDelete] = useState<HealthRecord | null>(null)
 
   const filteredRecords = useMemo(() => {
-    return healthRecords.filter((rec) => {
+    const q = (searchQuery || '').toLowerCase().trim()
+    return (healthRecords || []).filter((rec) => {
+      if (!rec) return false
       const matchPet = selectedPetId === 'all' || rec.petId === selectedPetId
       const matchSearch =
-        rec.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        rec.vetOrClinic.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        rec.diagnosis.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        rec.symptoms.toLowerCase().includes(searchQuery.toLowerCase())
+        !q ||
+        (rec.title || '').toLowerCase().includes(q) ||
+        (rec.vetOrClinic || '').toLowerCase().includes(q) ||
+        (rec.diagnosis || '').toLowerCase().includes(q) ||
+        (rec.symptoms || '').toLowerCase().includes(q) ||
+        (rec.notes || '').toLowerCase().includes(q)
       return matchPet && matchSearch
     })
   }, [healthRecords, selectedPetId, searchQuery])
@@ -150,7 +154,7 @@ function RiwayatKesehatanPage() {
       {/* Records list */}
       <div className="space-y-4">
         {filteredRecords.map((record) => {
-          const pet = pets.find((p) => p.id === record.petId)
+          const pet = (pets || []).find((p) => p && p.id === record.petId)
           return (
             <HealthRecordItem
               key={record.id}
@@ -181,7 +185,7 @@ function RiwayatKesehatanPage() {
           setRecordToEdit(null)
         }}
         onSave={handleSave}
-        pets={pets}
+        pets={pets || []}
         recordToEdit={recordToEdit}
       />
 
@@ -190,7 +194,7 @@ function RiwayatKesehatanPage() {
         isOpen={!!recordToView}
         onClose={() => setRecordToView(null)}
         record={recordToView}
-        pet={pets.find((p) => p.id === recordToView?.petId)}
+        pet={(pets || []).find((p) => p && p.id === recordToView?.petId)}
         onEdit={(r) => {
           setRecordToView(null)
           setRecordToEdit(r)
