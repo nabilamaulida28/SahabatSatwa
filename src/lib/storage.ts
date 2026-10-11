@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   Pet,
   CareSchedule,
@@ -21,6 +21,7 @@ import {
 } from '../data/initialData'
 import { todayStr, addDays, addMonths, daysBetween, relativeLabel } from './date'
 import { getSupabaseClient, isSupabaseConfigured, User } from './supabase'
+import { useAuth } from './auth'
 import {
   rowToPet,
   petToRow,
@@ -38,6 +39,33 @@ import {
   profileToRow,
   fetchAllUserData,
 } from './supabaseSync'
+
+export const DEMO_PET_IDS = ['pet-mochi', 'pet-luna', 'pet-oreo']
+export const DEMO_SCHEDULE_IDS = ['sched-1', 'sched-2', 'sched-3', 'sched-4', 'sched-5', 'sched-6']
+export const DEMO_HEALTH_IDS = ['health-1', 'health-2', 'health-3', 'health-4']
+export const DEMO_REMINDER_IDS = ['rem-1', 'rem-2', 'rem-3', 'rem-4', 'rem-5']
+export const DEMO_WEIGHT_IDS = ['weight-1', 'weight-2', 'weight-3', 'weight-4', 'weight-5', 'weight-6']
+export const DEMO_FEEDING_IDS = ['feed-1', 'feed-2', 'feed-3', 'feed-4', 'feed-5', 'feed-6']
+
+export function isDemoPet(pet: Pet | null | undefined): boolean {
+  if (!pet) return false
+  if (DEMO_PET_IDS.includes(pet.id)) return true
+  if (pet.name === 'Mochi' && pet.breed === 'British Shorthair') return true
+  if (pet.name === 'Luna' && pet.breed === 'Persia Medium') return true
+  if (pet.name === 'Oreo' && pet.breed === 'Golden Retriever Mix') return true
+  return false
+}
+
+export const DEFAULT_USER_PROFILE: OwnerProfile = {
+  id: '',
+  name: 'Pemilik Hewan',
+  email: '',
+  phone: '',
+  city: 'Jakarta',
+  address: '',
+  bio: 'Penyayang hewan.',
+  avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80',
+}
 
 const KEYS = {
   OWNER: 'sahabatsatwa_owner_v1',
@@ -74,28 +102,28 @@ function safeSet<T>(key: string, value: T): void {
 }
 
 export const storage = {
-  getOwner: () => safeGet<OwnerProfile>(KEYS.OWNER, INITIAL_OWNER),
+  getOwner: () => safeGet<OwnerProfile>(KEYS.OWNER, DEFAULT_USER_PROFILE),
   setOwner: (owner: OwnerProfile) => safeSet(KEYS.OWNER, owner),
 
-  getPets: () => safeGet<Pet[]>(KEYS.PETS, INITIAL_PETS),
+  getPets: () => safeGet<Pet[]>(KEYS.PETS, []),
   setPets: (pets: Pet[]) => safeSet(KEYS.PETS, pets),
 
-  getSchedules: () => safeGet<CareSchedule[]>(KEYS.SCHEDULES, INITIAL_SCHEDULES),
+  getSchedules: () => safeGet<CareSchedule[]>(KEYS.SCHEDULES, []),
   setSchedules: (schedules: CareSchedule[]) => safeSet(KEYS.SCHEDULES, schedules),
 
-  getHealthRecords: () => safeGet<HealthRecord[]>(KEYS.HEALTH, INITIAL_HEALTH_RECORDS),
+  getHealthRecords: () => safeGet<HealthRecord[]>(KEYS.HEALTH, []),
   setHealthRecords: (records: HealthRecord[]) => safeSet(KEYS.HEALTH, records),
 
-  getReminders: () => safeGet<Reminder[]>(KEYS.REMINDERS, INITIAL_REMINDERS),
+  getReminders: () => safeGet<Reminder[]>(KEYS.REMINDERS, []),
   setReminders: (reminders: Reminder[]) => safeSet(KEYS.REMINDERS, reminders),
 
-  getWeightRecords: () => safeGet<WeightRecord[]>(KEYS.WEIGHT, INITIAL_WEIGHT_RECORDS),
+  getWeightRecords: () => safeGet<WeightRecord[]>(KEYS.WEIGHT, []),
   setWeightRecords: (records: WeightRecord[]) => safeSet(KEYS.WEIGHT, records),
 
-  getFeedingRecords: () => safeGet<FeedingRecord[]>(KEYS.FEEDING, INITIAL_FEEDING_RECORDS),
+  getFeedingRecords: () => safeGet<FeedingRecord[]>(KEYS.FEEDING, []),
   setFeedingRecords: (records: FeedingRecord[]) => safeSet(KEYS.FEEDING, records),
 
-  getNotifications: () => safeGet<AppNotification[]>(KEYS.NOTIFICATIONS, INITIAL_NOTIFICATIONS),
+  getNotifications: () => safeGet<AppNotification[]>(KEYS.NOTIFICATIONS, []),
   setNotifications: (notifs: AppNotification[]) => safeSet(KEYS.NOTIFICATIONS, notifs),
 
   getReadNotifIds: () => safeGet<string[]>(KEYS.READ_NOTIFS, []),
@@ -158,94 +186,231 @@ export interface BackupFile {
   }
 }
 
-export function useSatwaStore() {
+export interface SatwaStoreContextType {
+  isClient: boolean
+  today: string
+  owner: OwnerProfile
+  pets: Pet[]
+  schedules: CareSchedule[]
+  healthRecords: HealthRecord[]
+  reminders: Reminder[]
+  weightRecords: WeightRecord[]
+  feedingRecords: FeedingRecord[]
+  notifications: AppNotification[]
+  isRealtimeActive: boolean
+  syncStatus: 'idle' | 'syncing' | 'synced' | 'error'
+  currentUser: User | null
+  syncWithSupabase: () => Promise<void>
+  exportData: () => BackupFile
+  importData: (raw: unknown) => { ok: true } | { ok: false; error: string }
+  saveOwner: (newOwner: OwnerProfile) => void
+  addPet: (pet: Pet) => void
+  updatePet: (pet: Pet) => void
+  deletePet: (petId: string) => void
+  addSchedule: (schedule: CareSchedule) => void
+  updateSchedule: (schedule: CareSchedule) => void
+  toggleScheduleComplete: (scheduleId: string) => CareSchedule | null
+  deleteSchedule: (id: string) => void
+  addHealthRecord: (record: HealthRecord) => void
+  updateHealthRecord: (record: HealthRecord) => void
+  deleteHealthRecord: (id: string) => void
+  addReminder: (reminder: Reminder) => void
+  updateReminder: (reminder: Reminder) => void
+  toggleReminderComplete: (reminderId: string) => void
+  deleteReminder: (id: string) => void
+  addWeightRecord: (record: WeightRecord) => void
+  deleteWeightRecord: (id: string) => void
+  addFeedingRecord: (record: FeedingRecord) => void
+  deleteFeedingRecord: (id: string) => void
+  markNotificationAsRead: (id: string) => void
+  markAllNotificationsAsRead: () => void
+  resetAllData: () => void
+}
+
+const SatwaStoreContext = createContext<SatwaStoreContextType | null>(null)
+
+export const SatwaStoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, isDemoUser, isConfigured } = useAuth()
+
   const [isClient, setIsClient] = useState(false)
-  const [owner, setOwnerState] = useState<OwnerProfile>(INITIAL_OWNER)
-  const [pets, setPetsState] = useState<Pet[]>(INITIAL_PETS)
-  const [schedules, setSchedulesState] = useState<CareSchedule[]>(INITIAL_SCHEDULES)
-  const [healthRecords, setHealthRecordsState] = useState<HealthRecord[]>(INITIAL_HEALTH_RECORDS)
-  const [reminders, setRemindersState] = useState<Reminder[]>(INITIAL_REMINDERS)
-  const [weightRecords, setWeightRecordsState] = useState<WeightRecord[]>(INITIAL_WEIGHT_RECORDS)
-  const [feedingRecords, setFeedingRecordsState] = useState<FeedingRecord[]>(INITIAL_FEEDING_RECORDS)
-  const [, setNotificationsState] = useState<AppNotification[]>(INITIAL_NOTIFICATIONS)
+  const [owner, setOwnerState] = useState<OwnerProfile>(() => {
+    if (isDemoUser) return INITIAL_OWNER
+    if (user) {
+      const stored = storage.getOwner()
+      if (stored && stored.id === user.id) return stored
+      return {
+        ...DEFAULT_USER_PROFILE,
+        id: user.id,
+        name: (user.user_metadata?.full_name as string) || user.email?.split('@')[0] || 'Pemilik Hewan',
+        email: user.email || '',
+      }
+    }
+    return storage.getOwner()
+  })
+
+  const [pets, setPetsState] = useState<Pet[]>(() => {
+    if (isDemoUser) return INITIAL_PETS
+    if (user) {
+      return storage.getPets().filter((p) => !isDemoPet(p))
+    }
+    return []
+  })
+
+  const [schedules, setSchedulesState] = useState<CareSchedule[]>(() => {
+    if (isDemoUser) return INITIAL_SCHEDULES
+    if (user) {
+      return storage.getSchedules().filter((s) => !DEMO_SCHEDULE_IDS.includes(s.id))
+    }
+    return []
+  })
+
+  const [healthRecords, setHealthRecordsState] = useState<HealthRecord[]>(() => {
+    if (isDemoUser) return INITIAL_HEALTH_RECORDS
+    if (user) {
+      return storage.getHealthRecords().filter((h) => !DEMO_HEALTH_IDS.includes(h.id))
+    }
+    return []
+  })
+
+  const [reminders, setRemindersState] = useState<Reminder[]>(() => {
+    if (isDemoUser) return INITIAL_REMINDERS
+    if (user) {
+      return storage.getReminders().filter((r) => !DEMO_REMINDER_IDS.includes(r.id))
+    }
+    return []
+  })
+
+  const [weightRecords, setWeightRecordsState] = useState<WeightRecord[]>(() => {
+    if (isDemoUser) return INITIAL_WEIGHT_RECORDS
+    if (user) {
+      return storage.getWeightRecords().filter((w) => !DEMO_WEIGHT_IDS.includes(w.id))
+    }
+    return []
+  })
+
+  const [feedingRecords, setFeedingRecordsState] = useState<FeedingRecord[]>(() => {
+    if (isDemoUser) return INITIAL_FEEDING_RECORDS
+    if (user) {
+      return storage.getFeedingRecords().filter((f) => !DEMO_FEEDING_IDS.includes(f.id))
+    }
+    return []
+  })
+
   const [readNotifIds, setReadNotifIdsState] = useState<string[]>([])
   const [today, setToday] = useState<string>(todayStr())
 
   // Realtime & Supabase sync states
   const [isRealtimeActive, setIsRealtimeActive] = useState(false)
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle')
-  const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const currentUserRef = useRef<User | null>(null)
 
-  const reloadAll = useCallback(() => {
-    setOwnerState(storage.getOwner())
-    setPetsState(storage.getPets())
-    setSchedulesState(storage.getSchedules())
-    setHealthRecordsState(storage.getHealthRecords())
-    setRemindersState(storage.getReminders())
-    setWeightRecordsState(storage.getWeightRecords())
-    setFeedingRecordsState(storage.getFeedingRecords())
-    setNotificationsState(storage.getNotifications())
+  const userRef = useRef<User | null>(user)
+  userRef.current = user
+
+  const reloadFromStorage = useCallback(() => {
+    if (isDemoUser) {
+      setOwnerState(INITIAL_OWNER)
+      setPetsState(INITIAL_PETS)
+      setSchedulesState(INITIAL_SCHEDULES)
+      setHealthRecordsState(INITIAL_HEALTH_RECORDS)
+      setRemindersState(INITIAL_REMINDERS)
+      setWeightRecordsState(INITIAL_WEIGHT_RECORDS)
+      setFeedingRecordsState(INITIAL_FEEDING_RECORDS)
+      return
+    }
+
+    const currentOwner = storage.getOwner()
+    const currentPets = storage.getPets().filter((p) => !isDemoPet(p))
+    const currentSched = storage.getSchedules().filter((s) => !DEMO_SCHEDULE_IDS.includes(s.id))
+    const currentHealth = storage.getHealthRecords().filter((h) => !DEMO_HEALTH_IDS.includes(h.id))
+    const currentRem = storage.getReminders().filter((r) => !DEMO_REMINDER_IDS.includes(r.id))
+    const currentWeight = storage.getWeightRecords().filter((w) => !DEMO_WEIGHT_IDS.includes(w.id))
+    const currentFeed = storage.getFeedingRecords().filter((f) => !DEMO_FEEDING_IDS.includes(f.id))
+
+    setOwnerState(currentOwner)
+    setPetsState(currentPets)
+    setSchedulesState(currentSched)
+    setHealthRecordsState(currentHealth)
+    setRemindersState(currentRem)
+    setWeightRecordsState(currentWeight)
+    setFeedingRecordsState(currentFeed)
     setReadNotifIdsState(storage.getReadNotifIds())
     setToday(todayStr())
-  }, [])
+  }, [isDemoUser])
 
   // Sync from Supabase for a given user
-  const syncFromSupabase = useCallback(async (user: User) => {
+  const syncFromSupabase = useCallback(async (activeUser: User) => {
     setSyncStatus('syncing')
     try {
-      const data = await fetchAllUserData(user.id)
+      const data = await fetchAllUserData(activeUser.id)
       if (data) {
+        const supabase = getSupabaseClient()
+
+        // 1. Profile sync
         if (data.profile) {
-          setOwnerState(data.profile)
-          storage.setOwner(data.profile)
-        }
-
-        // If user already has pets in Supabase, load them
-        if (data.pets.length > 0) {
-          setPetsState(data.pets)
-          storage.setPets(data.pets)
-
-          setSchedulesState(data.schedules)
-          storage.setSchedules(data.schedules)
-
-          setHealthRecordsState(data.healthRecords)
-          storage.setHealthRecords(data.healthRecords)
-
-          setRemindersState(data.reminders)
-          storage.setReminders(data.reminders)
-
-          setFeedingRecordsState(data.feedingRecords)
-          storage.setFeedingRecords(data.feedingRecords)
-
-          setWeightRecordsState(data.weightRecords)
-          storage.setWeightRecords(data.weightRecords)
-        } else {
-          // Brand new user: offer initial sample data
-          // Seed local data to Supabase so they have a great initial experience
-          const supabase = getSupabaseClient()
-          if (supabase) {
-            try {
-              const seedPets = INITIAL_PETS.map((p) => petToRow(p, user.id))
-              const seedSchedules = INITIAL_SCHEDULES.map((s) => scheduleToRow(s, user.id))
-              const seedHealth = INITIAL_HEALTH_RECORDS.map((h) => healthToRow(h, user.id))
-              const seedRem = INITIAL_REMINDERS.map((r) => reminderToRow(r, user.id))
-              const seedFeed = INITIAL_FEEDING_RECORDS.map((f) => feedingToRow(f, user.id))
-              const seedWeight = INITIAL_WEIGHT_RECORDS.map((w) => weightToRow(w, user.id))
-
-              await Promise.allSettled([
-                supabase.from('pets').insert(seedPets),
-                supabase.from('care_schedules').insert(seedSchedules),
-                supabase.from('health_records').insert(seedHealth),
-                supabase.from('reminders').insert(seedRem),
-                supabase.from('feeding_records').insert(seedFeed),
-                supabase.from('weight_records').insert(seedWeight),
-              ])
-            } catch (err) {
-              console.warn('Initial seeding skipped:', err)
+          let cleanProfile = data.profile
+          if (cleanProfile.bio?.includes('Mochi, Luna, dan Oreo')) {
+            cleanProfile = { ...cleanProfile, bio: 'Penyayang hewan.' }
+            if (supabase) {
+              void supabase.from('profiles').update({ bio: 'Penyayang hewan.' }).eq('id', activeUser.id)
             }
           }
+          setOwnerState(cleanProfile)
+          storage.setOwner(cleanProfile)
+        } else {
+          const initialProf: OwnerProfile = {
+            ...DEFAULT_USER_PROFILE,
+            id: activeUser.id,
+            name: (activeUser.user_metadata?.full_name as string) || activeUser.email?.split('@')[0] || 'Pemilik Hewan',
+            email: activeUser.email || '',
+          }
+          setOwnerState(initialProf)
+          storage.setOwner(initialProf)
+          if (supabase) {
+            void supabase.from('profiles').upsert(profileToRow(initialProf, activeUser.id))
+          }
         }
+
+        // 2. Real user data filtering (Strictly remove any demo data)
+        const realPets = (data.pets || []).filter((p) => !isDemoPet(p))
+        const realSchedules = (data.schedules || []).filter((s) => !DEMO_SCHEDULE_IDS.includes(s.id))
+        const realHealth = (data.healthRecords || []).filter((h) => !DEMO_HEALTH_IDS.includes(h.id))
+        const realReminders = (data.reminders || []).filter((r) => !DEMO_REMINDER_IDS.includes(r.id))
+        const realFeeding = (data.feedingRecords || []).filter((f) => !DEMO_FEEDING_IDS.includes(f.id))
+        const realWeight = (data.weightRecords || []).filter((w) => !DEMO_WEIGHT_IDS.includes(w.id))
+
+        // 3. Purge leaked demo rows from Supabase database if they were previously seeded
+        const hasLeakedDemoPets = (data.pets || []).some(isDemoPet)
+        const hasLeakedDemoSched = (data.schedules || []).some((s) => DEMO_SCHEDULE_IDS.includes(s.id))
+        if (supabase && (hasLeakedDemoPets || hasLeakedDemoSched)) {
+          void Promise.allSettled([
+            supabase.from('pets').delete().in('id', DEMO_PET_IDS).eq('user_id', activeUser.id),
+            supabase.from('care_schedules').delete().in('id', DEMO_SCHEDULE_IDS).eq('user_id', activeUser.id),
+            supabase.from('health_records').delete().in('id', DEMO_HEALTH_IDS).eq('user_id', activeUser.id),
+            supabase.from('reminders').delete().in('id', DEMO_REMINDER_IDS).eq('user_id', activeUser.id),
+            supabase.from('feeding_records').delete().in('id', DEMO_FEEDING_IDS).eq('user_id', activeUser.id),
+            supabase.from('weight_records').delete().in('id', DEMO_WEIGHT_IDS).eq('user_id', activeUser.id),
+          ])
+        }
+
+        // 4. Update React state & localStorage with clean data
+        setPetsState(realPets)
+        storage.setPets(realPets)
+
+        setSchedulesState(realSchedules)
+        storage.setSchedules(realSchedules)
+
+        setHealthRecordsState(realHealth)
+        storage.setHealthRecords(realHealth)
+
+        setRemindersState(realReminders)
+        storage.setReminders(realReminders)
+
+        setFeedingRecordsState(realFeeding)
+        storage.setFeedingRecords(realFeeding)
+
+        setWeightRecordsState(realWeight)
+        storage.setWeightRecords(realWeight)
+
         setSyncStatus('synced')
       } else {
         setSyncStatus('idle')
@@ -256,13 +421,12 @@ export function useSatwaStore() {
     }
   }, [])
 
-  // Initial load & listeners
+  // Window listeners for storage and focus
   useEffect(() => {
     setIsClient(true)
-    reloadAll()
 
     const handleUpdate = () => {
-      reloadAll()
+      reloadFromStorage()
     }
 
     window.addEventListener('sahabatsatwa_update', handleUpdate)
@@ -278,185 +442,238 @@ export function useSatwaStore() {
       window.removeEventListener('sahabatsatwa_update', handleUpdate)
       window.removeEventListener('storage', handleUpdate)
     }
-  }, [reloadAll])
+  }, [reloadFromStorage])
 
-  // Setup Supabase Realtime Channel & Auth Observer
+  // Setup ONE central Supabase Realtime Channel
   useEffect(() => {
-    if (!isSupabaseConfigured()) {
+    if (isDemoUser) {
+      setOwnerState(INITIAL_OWNER)
+      setPetsState(INITIAL_PETS)
+      setSchedulesState(INITIAL_SCHEDULES)
+      setHealthRecordsState(INITIAL_HEALTH_RECORDS)
+      setRemindersState(INITIAL_REMINDERS)
+      setWeightRecordsState(INITIAL_WEIGHT_RECORDS)
+      setFeedingRecordsState(INITIAL_FEEDING_RECORDS)
       setIsRealtimeActive(false)
+      setSyncStatus('idle')
+      return
+    }
+
+    if (!user || !isConfigured) {
+      setIsRealtimeActive(false)
+      setSyncStatus('idle')
       return
     }
 
     const supabase = getSupabaseClient()
     if (!supabase) return
 
-    let channel: any = null
+    // Immediately trigger initial sync
+    syncFromSupabase(user)
 
-    // Check session
-    supabase.auth.getSession().then(({ data }) => {
-      const u = data?.session?.user || null
-      setCurrentUser(u)
-      currentUserRef.current = u
-      if (u) {
-        syncFromSupabase(u)
-        setupRealtime(u)
-      }
-    })
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      const u = session?.user || null
-      setCurrentUser(u)
-      currentUserRef.current = u
-      if (u) {
-        syncFromSupabase(u)
-        setupRealtime(u)
-      } else {
-        if (channel) {
-          supabase.removeChannel(channel)
-          channel = null
+    // Setup channel for authenticated user
+    const channelName = `satwa-realtime-user-${user.id}`
+    const channel = supabase
+      .channel(channelName)
+      // PETS Realtime
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'pets', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newPet = rowToPet(payload.new)
+            if (!isDemoPet(newPet)) {
+              setPetsState((prev) => {
+                const next = [newPet, ...prev.filter((p) => p.id !== newPet.id)]
+                storage.setPets(next)
+                return next
+              })
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            const updated = rowToPet(payload.new)
+            setPetsState((prev) => {
+              const next = prev.map((p) => (p.id === updated.id ? updated : p))
+              storage.setPets(next)
+              return next
+            })
+          } else if (payload.eventType === 'DELETE') {
+            setPetsState((prev) => {
+              const next = prev.filter((p) => p.id !== payload.old.id)
+              storage.setPets(next)
+              return next
+            })
+          }
         }
-        setIsRealtimeActive(false)
-        reloadAll()
-      }
-    })
-
-    function setupRealtime(user: User) {
-      if (!supabase) return
-      if (channel) {
-        supabase.removeChannel(channel)
-      }
-
-      channel = supabase
-        .channel(`satwa-realtime-channel-${user.id}`)
-        // PETS Realtime
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'pets', filter: `user_id=eq.${user.id}` },
-          (payload) => {
-            if (payload.eventType === 'INSERT') {
-              const newPet = rowToPet(payload.new)
-              setPetsState((prev) => [newPet, ...prev.filter((p) => p.id !== newPet.id)])
-            } else if (payload.eventType === 'UPDATE') {
-              const updated = rowToPet(payload.new)
-              setPetsState((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
-            } else if (payload.eventType === 'DELETE') {
-              setPetsState((prev) => prev.filter((p) => p.id !== payload.old.id))
-            }
+      )
+      // CARE SCHEDULES Realtime
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'care_schedules', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newSched = rowToSchedule(payload.new)
+            setSchedulesState((prev) => {
+              const next = [newSched, ...prev.filter((s) => s.id !== newSched.id)]
+              storage.setSchedules(next)
+              return next
+            })
+          } else if (payload.eventType === 'UPDATE') {
+            const updated = rowToSchedule(payload.new)
+            setSchedulesState((prev) => {
+              const next = prev.map((s) => (s.id === updated.id ? updated : s))
+              storage.setSchedules(next)
+              return next
+            })
+          } else if (payload.eventType === 'DELETE') {
+            setSchedulesState((prev) => {
+              const next = prev.filter((s) => s.id !== payload.old.id)
+              storage.setSchedules(next)
+              return next
+            })
           }
-        )
-        // CARE SCHEDULES Realtime
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'care_schedules', filter: `user_id=eq.${user.id}` },
-          (payload) => {
-            if (payload.eventType === 'INSERT') {
-              const newSched = rowToSchedule(payload.new)
-              setSchedulesState((prev) => [newSched, ...prev.filter((s) => s.id !== newSched.id)])
-            } else if (payload.eventType === 'UPDATE') {
-              const updated = rowToSchedule(payload.new)
-              setSchedulesState((prev) => prev.map((s) => (s.id === updated.id ? updated : s)))
-            } else if (payload.eventType === 'DELETE') {
-              setSchedulesState((prev) => prev.filter((s) => s.id !== payload.old.id))
-            }
+        }
+      )
+      // HEALTH RECORDS Realtime
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'health_records', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newRec = rowToHealth(payload.new)
+            setHealthRecordsState((prev) => {
+              const next = [newRec, ...prev.filter((h) => h.id !== newRec.id)]
+              storage.setHealthRecords(next)
+              return next
+            })
+          } else if (payload.eventType === 'UPDATE') {
+            const updated = rowToHealth(payload.new)
+            setHealthRecordsState((prev) => {
+              const next = prev.map((h) => (h.id === updated.id ? updated : h))
+              storage.setHealthRecords(next)
+              return next
+            })
+          } else if (payload.eventType === 'DELETE') {
+            setHealthRecordsState((prev) => {
+              const next = prev.filter((h) => h.id !== payload.old.id)
+              storage.setHealthRecords(next)
+              return next
+            })
           }
-        )
-        // HEALTH RECORDS Realtime
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'health_records', filter: `user_id=eq.${user.id}` },
-          (payload) => {
-            if (payload.eventType === 'INSERT') {
-              const newRec = rowToHealth(payload.new)
-              setHealthRecordsState((prev) => [newRec, ...prev.filter((h) => h.id !== newRec.id)])
-            } else if (payload.eventType === 'UPDATE') {
-              const updated = rowToHealth(payload.new)
-              setHealthRecordsState((prev) => prev.map((h) => (h.id === updated.id ? updated : h)))
-            } else if (payload.eventType === 'DELETE') {
-              setHealthRecordsState((prev) => prev.filter((h) => h.id !== payload.old.id))
-            }
+        }
+      )
+      // REMINDERS Realtime
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'reminders', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newRem = rowToReminder(payload.new)
+            setRemindersState((prev) => {
+              const next = [newRem, ...prev.filter((r) => r.id !== newRem.id)]
+              storage.setReminders(next)
+              return next
+            })
+          } else if (payload.eventType === 'UPDATE') {
+            const updated = rowToReminder(payload.new)
+            setRemindersState((prev) => {
+              const next = prev.map((r) => (r.id === updated.id ? updated : r))
+              storage.setReminders(next)
+              return next
+            })
+          } else if (payload.eventType === 'DELETE') {
+            setRemindersState((prev) => {
+              const next = prev.filter((r) => r.id !== payload.old.id)
+              storage.setReminders(next)
+              return next
+            })
           }
-        )
-        // REMINDERS Realtime
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'reminders', filter: `user_id=eq.${user.id}` },
-          (payload) => {
-            if (payload.eventType === 'INSERT') {
-              const newRem = rowToReminder(payload.new)
-              setRemindersState((prev) => [newRem, ...prev.filter((r) => r.id !== newRem.id)])
-            } else if (payload.eventType === 'UPDATE') {
-              const updated = rowToReminder(payload.new)
-              setRemindersState((prev) => prev.map((r) => (r.id === updated.id ? updated : r)))
-            } else if (payload.eventType === 'DELETE') {
-              setRemindersState((prev) => prev.filter((r) => r.id !== payload.old.id))
-            }
+        }
+      )
+      // FEEDING RECORDS Realtime
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'feeding_records', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newFeed = rowToFeeding(payload.new)
+            setFeedingRecordsState((prev) => {
+              const next = [newFeed, ...prev.filter((f) => f.id !== newFeed.id)]
+              storage.setFeedingRecords(next)
+              return next
+            })
+          } else if (payload.eventType === 'UPDATE') {
+            const updated = rowToFeeding(payload.new)
+            setFeedingRecordsState((prev) => {
+              const next = prev.map((f) => (f.id === updated.id ? updated : f))
+              storage.setFeedingRecords(next)
+              return next
+            })
+          } else if (payload.eventType === 'DELETE') {
+            setFeedingRecordsState((prev) => {
+              const next = prev.filter((f) => f.id !== payload.old.id)
+              storage.setFeedingRecords(next)
+              return next
+            })
           }
-        )
-        // FEEDING RECORDS Realtime
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'feeding_records', filter: `user_id=eq.${user.id}` },
-          (payload) => {
-            if (payload.eventType === 'INSERT') {
-              const newFeed = rowToFeeding(payload.new)
-              setFeedingRecordsState((prev) => [newFeed, ...prev.filter((f) => f.id !== newFeed.id)])
-            } else if (payload.eventType === 'UPDATE') {
-              const updated = rowToFeeding(payload.new)
-              setFeedingRecordsState((prev) => prev.map((f) => (f.id === updated.id ? updated : f)))
-            } else if (payload.eventType === 'DELETE') {
-              setFeedingRecordsState((prev) => prev.filter((f) => f.id !== payload.old.id))
-            }
+        }
+      )
+      // WEIGHT RECORDS Realtime
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'weight_records', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newWeight = rowToWeight(payload.new)
+            setWeightRecordsState((prev) => {
+              const next = [newWeight, ...prev.filter((w) => w.id !== newWeight.id)]
+              storage.setWeightRecords(next)
+              return next
+            })
+          } else if (payload.eventType === 'UPDATE') {
+            const updated = rowToWeight(payload.new)
+            setWeightRecordsState((prev) => {
+              const next = prev.map((w) => (w.id === updated.id ? updated : w))
+              storage.setWeightRecords(next)
+              return next
+            })
+          } else if (payload.eventType === 'DELETE') {
+            setWeightRecordsState((prev) => {
+              const next = prev.filter((w) => w.id !== payload.old.id)
+              storage.setWeightRecords(next)
+              return next
+            })
           }
-        )
-        // WEIGHT RECORDS Realtime
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'weight_records', filter: `user_id=eq.${user.id}` },
-          (payload) => {
-            if (payload.eventType === 'INSERT') {
-              const newWeight = rowToWeight(payload.new)
-              setWeightRecordsState((prev) => [newWeight, ...prev.filter((w) => w.id !== newWeight.id)])
-            } else if (payload.eventType === 'UPDATE') {
-              const updated = rowToWeight(payload.new)
-              setWeightRecordsState((prev) => prev.map((w) => (w.id === updated.id ? updated : w)))
-            } else if (payload.eventType === 'DELETE') {
-              setWeightRecordsState((prev) => prev.filter((w) => w.id !== payload.old.id))
-            }
+        }
+      )
+      // PROFILES Realtime
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
+        (payload) => {
+          if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+            const prof = rowToProfile(payload.new, user.email)
+            setOwnerState(prof)
+            storage.setOwner(prof)
           }
-        )
-        // PROFILES Realtime
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
-          (payload) => {
-            if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
-              const prof = rowToProfile(payload.new, user.email)
-              setOwnerState(prof)
-              storage.setOwner(prof)
-            }
-          }
-        )
-        .subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            setIsRealtimeActive(true)
-          } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-            setIsRealtimeActive(false)
-          }
-        })
-    }
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          setIsRealtimeActive(true)
+          setSyncStatus('synced')
+        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          setIsRealtimeActive(false)
+        }
+      })
 
     return () => {
-      subscription.unsubscribe()
-      if (channel) {
-        supabase.removeChannel(channel)
-      }
+      supabase.removeChannel(channel)
+      setIsRealtimeActive(false)
     }
-  }, [syncFromSupabase, reloadAll])
+  }, [user, isDemoUser, isConfigured, syncFromSupabase])
 
   // ========================================================
-  // MUTATION HELPERS (Optimistic local + Supabase online)
+  // MUTATION HELPERS (Optimistic local + Supabase Realtime)
   // ========================================================
 
   const execCloud = (query: PromiseLike<any>) => {
@@ -469,21 +686,21 @@ export function useSatwaStore() {
     storage.setOwner(newOwner)
     setOwnerState(newOwner)
 
-    const u = currentUserRef.current
+    const u = userRef.current
     const supabase = getSupabaseClient()
-    if (u && supabase) {
+    if (u && !isDemoUser && supabase && isConfigured) {
       execCloud(supabase.from('profiles').upsert(profileToRow(newOwner, u.id)))
     }
   }
 
   const addPet = (pet: Pet) => {
-    const updated = [pet, ...pets]
+    const updated = [pet, ...pets.filter((p) => p.id !== pet.id)]
     storage.setPets(updated)
     setPetsState(updated)
 
-    const u = currentUserRef.current
+    const u = userRef.current
     const supabase = getSupabaseClient()
-    if (u && supabase) {
+    if (u && !isDemoUser && supabase && isConfigured) {
       execCloud(supabase.from('pets').upsert(petToRow(pet, u.id)))
     }
 
@@ -500,7 +717,7 @@ export function useSatwaStore() {
       const updatedWeight = [...weightRecords, weightRec]
       storage.setWeightRecords(updatedWeight)
       setWeightRecordsState(updatedWeight)
-      if (u && supabase) {
+      if (u && !isDemoUser && supabase && isConfigured) {
         execCloud(supabase.from('weight_records').upsert(weightToRow(weightRec, u.id)))
       }
     }
@@ -511,9 +728,9 @@ export function useSatwaStore() {
     storage.setPets(updated)
     setPetsState(updated)
 
-    const u = currentUserRef.current
+    const u = userRef.current
     const supabase = getSupabaseClient()
-    if (u && supabase) {
+    if (u && !isDemoUser && supabase && isConfigured) {
       execCloud(supabase.from('pets').upsert(petToRow(updatedPet, u.id)))
     }
   }
@@ -523,13 +740,18 @@ export function useSatwaStore() {
     storage.setPets(updated)
     setPetsState(updated)
 
-    const u = currentUserRef.current
+    const u = userRef.current
     const supabase = getSupabaseClient()
-    if (u && supabase) {
+    if (u && !isDemoUser && supabase && isConfigured) {
       execCloud(supabase.from('pets').delete().eq('id', petId).eq('user_id', u.id))
+      execCloud(supabase.from('care_schedules').delete().eq('pet_id', petId).eq('user_id', u.id))
+      execCloud(supabase.from('health_records').delete().eq('pet_id', petId).eq('user_id', u.id))
+      execCloud(supabase.from('reminders').delete().eq('pet_id', petId).eq('user_id', u.id))
+      execCloud(supabase.from('weight_records').delete().eq('pet_id', petId).eq('user_id', u.id))
+      execCloud(supabase.from('feeding_records').delete().eq('pet_id', petId).eq('user_id', u.id))
     }
 
-    // Cascade delete related records
+    // Cascade delete related records locally
     const updatedSched = schedules.filter((s) => s.petId !== petId)
     storage.setSchedules(updatedSched)
     setSchedulesState(updatedSched)
@@ -556,9 +778,9 @@ export function useSatwaStore() {
     storage.setSchedules(updated)
     setSchedulesState(updated)
 
-    const u = currentUserRef.current
+    const u = userRef.current
     const supabase = getSupabaseClient()
-    if (u && supabase) {
+    if (u && !isDemoUser && supabase && isConfigured) {
       execCloud(supabase.from('care_schedules').upsert(scheduleToRow(schedule, u.id)))
     }
   }
@@ -568,22 +790,27 @@ export function useSatwaStore() {
     storage.setSchedules(updated)
     setSchedulesState(updated)
 
-    const u = currentUserRef.current
+    const u = userRef.current
     const supabase = getSupabaseClient()
-    if (u && supabase) {
+    if (u && !isDemoUser && supabase && isConfigured) {
       execCloud(supabase.from('care_schedules').upsert(scheduleToRow(updatedSchedule, u.id)))
     }
   }
 
-  /** Mengembalikan jadwal berikutnya bila jadwal berulang baru saja diselesaikan. */
   const toggleScheduleComplete = (scheduleId: string): CareSchedule | null => {
     const target = schedules.find((s) => s.id === scheduleId)
     if (!target) return null
     const completing = target.status !== 'Selesai'
 
+    const todayDate = todayStr()
     let updated = schedules.map((s) =>
       s.id === scheduleId
-        ? { ...s, status: completing ? ('Selesai' as const) : ('Akan Datang' as const) }
+        ? {
+            ...s,
+            status: completing
+              ? ('Selesai' as const)
+              : effectiveScheduleStatus({ ...s, status: 'Akan Datang' }, todayDate),
+          }
         : s
     )
 
@@ -610,9 +837,9 @@ export function useSatwaStore() {
     storage.setSchedules(updated)
     setSchedulesState(updated)
 
-    const u = currentUserRef.current
+    const u = userRef.current
     const supabase = getSupabaseClient()
-    if (u && supabase) {
+    if (u && !isDemoUser && supabase && isConfigured) {
       const modified = updated.find((s) => s.id === scheduleId)
       if (modified) {
         execCloud(supabase.from('care_schedules').upsert(scheduleToRow(modified, u.id)))
@@ -630,9 +857,9 @@ export function useSatwaStore() {
     storage.setSchedules(updated)
     setSchedulesState(updated)
 
-    const u = currentUserRef.current
+    const u = userRef.current
     const supabase = getSupabaseClient()
-    if (u && supabase) {
+    if (u && !isDemoUser && supabase && isConfigured) {
       execCloud(supabase.from('care_schedules').delete().eq('id', id).eq('user_id', u.id))
     }
   }
@@ -642,9 +869,9 @@ export function useSatwaStore() {
     storage.setHealthRecords(updated)
     setHealthRecordsState(updated)
 
-    const u = currentUserRef.current
+    const u = userRef.current
     const supabase = getSupabaseClient()
-    if (u && supabase) {
+    if (u && !isDemoUser && supabase && isConfigured) {
       execCloud(supabase.from('health_records').upsert(healthToRow(record, u.id)))
     }
   }
@@ -654,9 +881,9 @@ export function useSatwaStore() {
     storage.setHealthRecords(updated)
     setHealthRecordsState(updated)
 
-    const u = currentUserRef.current
+    const u = userRef.current
     const supabase = getSupabaseClient()
-    if (u && supabase) {
+    if (u && !isDemoUser && supabase && isConfigured) {
       execCloud(supabase.from('health_records').upsert(healthToRow(updatedRecord, u.id)))
     }
   }
@@ -666,9 +893,9 @@ export function useSatwaStore() {
     storage.setHealthRecords(updated)
     setHealthRecordsState(updated)
 
-    const u = currentUserRef.current
+    const u = userRef.current
     const supabase = getSupabaseClient()
-    if (u && supabase) {
+    if (u && !isDemoUser && supabase && isConfigured) {
       execCloud(supabase.from('health_records').delete().eq('id', id).eq('user_id', u.id))
     }
   }
@@ -678,9 +905,9 @@ export function useSatwaStore() {
     storage.setReminders(updated)
     setRemindersState(updated)
 
-    const u = currentUserRef.current
+    const u = userRef.current
     const supabase = getSupabaseClient()
-    if (u && supabase) {
+    if (u && !isDemoUser && supabase && isConfigured) {
       execCloud(supabase.from('reminders').upsert(reminderToRow(reminder, u.id)))
     }
   }
@@ -690,22 +917,25 @@ export function useSatwaStore() {
     storage.setReminders(updated)
     setRemindersState(updated)
 
-    const u = currentUserRef.current
+    const u = userRef.current
     const supabase = getSupabaseClient()
-    if (u && supabase) {
+    if (u && !isDemoUser && supabase && isConfigured) {
       execCloud(supabase.from('reminders').upsert(reminderToRow(updatedReminder, u.id)))
     }
   }
 
   const toggleReminderComplete = (reminderId: string) => {
     let modifiedTarget: Reminder | null = null
+    const todayDate = todayStr()
     const updated = reminders.map((r) => {
       if (r.id === reminderId) {
         const nextCompleted = !r.isCompleted
         const mod: Reminder = {
           ...r,
           isCompleted: nextCompleted,
-          status: nextCompleted ? ('Selesai' as const) : ('Hari Ini' as const),
+          status: nextCompleted
+            ? ('Selesai' as const)
+            : effectiveReminderStatus({ ...r, isCompleted: false }, todayDate),
         }
         modifiedTarget = mod
         return mod
@@ -715,9 +945,9 @@ export function useSatwaStore() {
     storage.setReminders(updated)
     setRemindersState(updated)
 
-    const u = currentUserRef.current
+    const u = userRef.current
     const supabase = getSupabaseClient()
-    if (u && supabase && modifiedTarget) {
+    if (u && !isDemoUser && supabase && isConfigured && modifiedTarget) {
       execCloud(supabase.from('reminders').upsert(reminderToRow(modifiedTarget, u.id)))
     }
   }
@@ -727,9 +957,9 @@ export function useSatwaStore() {
     storage.setReminders(updated)
     setRemindersState(updated)
 
-    const u = currentUserRef.current
+    const u = userRef.current
     const supabase = getSupabaseClient()
-    if (u && supabase) {
+    if (u && !isDemoUser && supabase && isConfigured) {
       execCloud(supabase.from('reminders').delete().eq('id', id).eq('user_id', u.id))
     }
   }
@@ -741,9 +971,9 @@ export function useSatwaStore() {
     storage.setWeightRecords(updated)
     setWeightRecordsState(updated)
 
-    const u = currentUserRef.current
+    const u = userRef.current
     const supabase = getSupabaseClient()
-    if (u && supabase) {
+    if (u && !isDemoUser && supabase && isConfigured) {
       execCloud(supabase.from('weight_records').upsert(weightToRow(record, u.id)))
     }
 
@@ -763,13 +993,12 @@ export function useSatwaStore() {
     storage.setWeightRecords(updated)
     setWeightRecordsState(updated)
 
-    const u = currentUserRef.current
+    const u = userRef.current
     const supabase = getSupabaseClient()
-    if (u && supabase) {
+    if (u && !isDemoUser && supabase && isConfigured) {
       execCloud(supabase.from('weight_records').delete().eq('id', id).eq('user_id', u.id))
     }
 
-    // Sinkronkan berat terkini hewan dengan catatan terbaru yang tersisa
     if (target) {
       const pet = pets.find((p) => p.id === target.petId)
       if (pet) {
@@ -787,9 +1016,9 @@ export function useSatwaStore() {
     storage.setFeedingRecords(updated)
     setFeedingRecordsState(updated)
 
-    const u = currentUserRef.current
+    const u = userRef.current
     const supabase = getSupabaseClient()
-    if (u && supabase) {
+    if (u && !isDemoUser && supabase && isConfigured) {
       execCloud(supabase.from('feeding_records').upsert(feedingToRow(record, u.id)))
     }
   }
@@ -799,9 +1028,9 @@ export function useSatwaStore() {
     storage.setFeedingRecords(updated)
     setFeedingRecordsState(updated)
 
-    const u = currentUserRef.current
+    const u = userRef.current
     const supabase = getSupabaseClient()
-    if (u && supabase) {
+    if (u && !isDemoUser && supabase && isConfigured) {
       execCloud(supabase.from('feeding_records').delete().eq('id', id).eq('user_id', u.id))
     }
   }
@@ -819,7 +1048,7 @@ export function useSatwaStore() {
     setReadNotifIdsState(updated)
   }
 
-  // ---- Backup / restore ----
+  // Backup / Restore
   const exportData = (): BackupFile => ({
     app: 'sahabatsatwa',
     version: 1,
@@ -845,7 +1074,7 @@ export function useSatwaStore() {
       storage.setReminders(d.reminders)
       storage.setWeightRecords(d.weightRecords)
       storage.setFeedingRecords(d.feedingRecords)
-      reloadAll()
+      reloadFromStorage()
       return { ok: true }
     } catch {
       return { ok: false, error: 'Gagal membaca file backup.' }
@@ -854,18 +1083,17 @@ export function useSatwaStore() {
 
   const resetAllData = () => {
     storage.resetToDefaults()
-    reloadAll()
+    reloadFromStorage()
   }
 
-  // Manual trigger sync with Supabase
   const syncWithSupabase = async () => {
-    const u = currentUserRef.current
-    if (u) {
+    const u = userRef.current
+    if (u && !isDemoUser) {
       await syncFromSupabase(u)
     }
   }
 
-  // Status jadwal & pengingat selalu dihitung ulang dari tanggal hari ini
+  // Status jadwal & pengingat
   const derivedSchedules = useMemo(
     () => schedules.map((s) => ({ ...s, status: effectiveScheduleStatus(s, today) })),
     [schedules, today]
@@ -875,7 +1103,7 @@ export function useSatwaStore() {
     [reminders, today]
   )
 
-  // Notifikasi dibangkitkan dari data nyata (bukan teks statis)
+  // Notifikasi dinamis
   const notifications: AppNotification[] = useMemo(() => {
     const list: AppNotification[] = []
     const petName = (id: string) => pets.find((p) => p.id === id)?.name ?? 'Hewan'
@@ -913,7 +1141,7 @@ export function useSatwaStore() {
     return list
   }, [derivedReminders, derivedSchedules, pets, readNotifIds, today])
 
-  return {
+  const contextValue: SatwaStoreContextType = {
     isClient,
     today,
     owner,
@@ -926,7 +1154,7 @@ export function useSatwaStore() {
     notifications,
     isRealtimeActive,
     syncStatus,
-    currentUser,
+    currentUser: user,
     syncWithSupabase,
     exportData,
     importData,
@@ -953,4 +1181,14 @@ export function useSatwaStore() {
     markAllNotificationsAsRead,
     resetAllData,
   }
+
+  return React.createElement(SatwaStoreContext.Provider, { value: contextValue }, children)
+}
+
+export function useSatwaStore(): SatwaStoreContextType {
+  const ctx = useContext(SatwaStoreContext)
+  if (!ctx) {
+    throw new Error('useSatwaStore must be used within a SatwaStoreProvider')
+  }
+  return ctx
 }
