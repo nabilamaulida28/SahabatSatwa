@@ -43,38 +43,45 @@ function JadwalPerawatanPage() {
   const STATUSES = ['Semua', 'Akan Datang', 'Selesai', 'Terlewat']
 
   const filteredSchedules = useMemo(() => {
-    return schedules.filter((s) => {
-      const matchCategory =
-        selectedCategory === 'Semua' || s.category === selectedCategory
-      const matchStatus =
-        selectedStatus === 'Semua' || s.status === selectedStatus
-      const matchSearch =
-        s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (s.notes && s.notes.toLowerCase().includes(searchQuery.toLowerCase()))
-      const matchDate = view !== 'kalender' || !selectedDate || s.date === selectedDate
-      return matchCategory && matchStatus && matchSearch && matchDate
-    })
-    // Belum selesai urut dari yang paling dekat; yang selesai di bawah (terbaru dulu)
-    .sort((a, b) => {
-      const aDone = a.status === 'Selesai'
-      const bDone = b.status === 'Selesai'
-      if (aDone !== bDone) return aDone ? 1 : -1
-      const cmp = `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`)
-      return aDone ? -cmp : cmp
-    })
+    const q = (searchQuery || '').toLowerCase().trim()
+    return (schedules || [])
+      .filter((s) => {
+        if (!s) return false
+        const matchCategory =
+          selectedCategory === 'Semua' || s.category === selectedCategory
+        const matchStatus =
+          selectedStatus === 'Semua' || s.status === selectedStatus
+        const matchSearch =
+          !q ||
+          (s.title || '').toLowerCase().includes(q) ||
+          (s.notes ? s.notes.toLowerCase().includes(q) : false)
+        const matchDate = view !== 'kalender' || !selectedDate || s.date === selectedDate
+        return matchCategory && matchStatus && matchSearch && matchDate
+      })
+      .sort((a, b) => {
+        const aDone = a.status === 'Selesai'
+        const bDone = b.status === 'Selesai'
+        if (aDone !== bDone) return aDone ? 1 : -1
+        const aKey = a.date ? `${a.date}T${a.time || '00:00'}` : ''
+        const bKey = b.date ? `${b.date}T${b.time || '00:00'}` : ''
+        const cmp = aKey.localeCompare(bKey)
+        return aDone ? -cmp : cmp
+      })
   }, [schedules, selectedCategory, selectedStatus, searchQuery, view, selectedDate])
 
   // Kalender hanya mengikuti filter kategori/status/pencarian, bukan tanggal
   const calendarSchedules = useMemo(
-    () =>
-      schedules.filter((s) => {
-        const q = searchQuery.toLowerCase()
+    () => {
+      const q = (searchQuery || '').toLowerCase().trim()
+      return (schedules || []).filter((s) => {
+        if (!s) return false
         return (
           (selectedCategory === 'Semua' || s.category === selectedCategory) &&
           (selectedStatus === 'Semua' || s.status === selectedStatus) &&
-          (s.title.toLowerCase().includes(q) || (s.notes && s.notes.toLowerCase().includes(q)))
+          (!q || (s.title || '').toLowerCase().includes(q) || (s.notes ? s.notes.toLowerCase().includes(q) : false))
         )
-      }),
+      })
+    },
     [schedules, selectedCategory, selectedStatus, searchQuery]
   )
 
@@ -240,7 +247,7 @@ function JadwalPerawatanPage() {
       {/* Schedules List */}
       <div className="space-y-3.5">
         {filteredSchedules.map((schedule) => {
-          const pet = pets.find((p) => p.id === schedule.petId)
+          const pet = (pets || []).find((p) => p && p.id === schedule.petId)
           return (
             <ScheduleItem
               key={schedule.id}

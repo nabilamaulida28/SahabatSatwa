@@ -29,7 +29,8 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
 
   const byDate = useMemo(() => {
     const map = new Map<string, CareSchedule[]>()
-    for (const s of schedules) {
+    for (const s of (schedules || [])) {
+      if (!s || !s.date) continue
       const arr = map.get(s.date) ?? []
       arr.push(s)
       map.set(s.date, arr)
@@ -106,8 +107,8 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
           const items = byDate.get(date) ?? []
           const isToday = date === today
           const isSelected = date === selectedDate
-          const hasOverdue = items.some((s) => s.status === 'Terlewat')
-          const categories = Array.from(new Set(items.map((s) => s.category))).slice(0, 3)
+          const hasOverdue = items.some((s) => s && s.status === 'Terlewat')
+          const categories = Array.from(new Set(items.map((s) => s?.category).filter(Boolean))) as ScheduleCategory[]
 
           return (
             <button
@@ -126,11 +127,11 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({
             >
               <span>{Number(date.slice(8))}</span>
               <span className="flex items-center gap-0.5 h-1.5">
-                {categories.map((c) => (
+                {categories.slice(0, 3).map((c) => (
                   <span
                     key={c}
                     className={`w-1.5 h-1.5 rounded-full ${
-                      isSelected ? 'bg-white' : hasOverdue ? 'bg-[#E11D48]' : DOT_COLOR[c]
+                      isSelected ? 'bg-white' : hasOverdue ? 'bg-[#E11D48]' : (DOT_COLOR[c] || 'bg-[#21845F]')
                     }`}
                   />
                 ))}
