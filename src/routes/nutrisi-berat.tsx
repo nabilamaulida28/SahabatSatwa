@@ -48,21 +48,25 @@ function NutrisiBeratPage() {
   const [feedingToDelete, setFeedingToDelete] = useState<FeedingRecord | null>(null)
 
   // Current selected pet
-  const activePet = pets.find((p) => p.id === selectedPetId) || pets[0]
+  const activePet = (pets || []).find((p) => p.id === selectedPetId) || (pets || [])[0]
 
   // Filter records for active pet
   const petWeightRecords = useMemo(() => {
     if (!activePet) return []
-    return weightRecords
-      .filter((w) => w.petId === activePet.id)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    return (weightRecords || [])
+      .filter((w) => w && w.petId === activePet.id)
+      .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
   }, [weightRecords, activePet])
 
   const petFeedingRecords = useMemo(() => {
     if (!activePet) return []
-    return feedingRecords
-      .filter((f) => f.petId === activePet.id)
-      .sort((a, b) => new Date(`${b.date}T${b.time}`).getTime() - new Date(`${a.date}T${a.time}`).getTime())
+    return (feedingRecords || [])
+      .filter((f) => f && f.petId === activePet.id)
+      .sort((a, b) => {
+        const bKey = `${b.date || ''} ${b.time || ''}`
+        const aKey = `${a.date || ''} ${a.time || ''}`
+        return bKey.localeCompare(aKey)
+      })
   }, [feedingRecords, activePet])
 
   // Weight Calculation: Latest weight & Change indicator

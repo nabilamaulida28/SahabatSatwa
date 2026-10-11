@@ -45,13 +45,16 @@ function PengingatPage() {
   ]
 
   const filteredReminders = useMemo(() => {
-    return reminders.filter((rem) => {
+    const q = (searchQuery || '').toLowerCase().trim()
+    return (reminders || []).filter((rem) => {
+      if (!rem) return false
       const matchCat =
         selectedCategory === 'Semua' || rem.category === selectedCategory
       const matchSearch =
-        rem.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        rem.dosageOrInstruction.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (rem.notes && rem.notes.toLowerCase().includes(searchQuery.toLowerCase()))
+        !q ||
+        (rem.title || '').toLowerCase().includes(q) ||
+        (rem.dosageOrInstruction || '').toLowerCase().includes(q) ||
+        (rem.notes ? rem.notes.toLowerCase().includes(q) : false)
       return matchCat && matchSearch
     })
   }, [reminders, selectedCategory, searchQuery])
@@ -87,8 +90,8 @@ function PengingatPage() {
   }
 
   const handleToggle = (id: string) => {
-    toggleReminderComplete(id)
     const target = reminders.find((r) => r.id === id)
+    toggleReminderComplete(id)
     if (target) {
       const stateText = target.isCompleted ? 'diaktifkan kembali' : 'ditandai Selesai'
       showToast(`Pengingat "${target.title}" ${stateText}!`)
@@ -179,7 +182,7 @@ function PengingatPage() {
               <ReminderItem
                 key={rem.id}
                 reminder={rem}
-                pet={pets.find((p) => p.id === rem.petId)}
+                pet={(pets || []).find((p) => p && p.id === rem.petId)}
                 onToggleComplete={handleToggle}
                 onEdit={(r) => {
                   setReminderToEdit(r)
@@ -211,7 +214,7 @@ function PengingatPage() {
               <ReminderItem
                 key={rem.id}
                 reminder={rem}
-                pet={pets.find((p) => p.id === rem.petId)}
+                pet={(pets || []).find((p) => p && p.id === rem.petId)}
                 onToggleComplete={handleToggle}
                 onEdit={(r) => {
                   setReminderToEdit(r)
@@ -239,7 +242,7 @@ function PengingatPage() {
               <ReminderItem
                 key={rem.id}
                 reminder={rem}
-                pet={pets.find((p) => p.id === rem.petId)}
+                pet={(pets || []).find((p) => p && p.id === rem.petId)}
                 onToggleComplete={handleToggle}
                 onEdit={(r) => {
                   setReminderToEdit(r)
@@ -260,7 +263,7 @@ function PengingatPage() {
           setReminderToEdit(null)
         }}
         onSave={handleSave}
-        pets={pets}
+        pets={pets || []}
         reminderToEdit={reminderToEdit}
       />
 

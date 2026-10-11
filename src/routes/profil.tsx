@@ -353,8 +353,10 @@ function ProfilPemilikPage() {
         onClose={() => setPendingImport(null)}
         onConfirm={handleConfirmImport}
         title="Pulihkan dari Backup?"
-        message="Data yang ada saat ini akan ditimpa dengan isi file backup."
+        message="Data yang ada saat ini akan digantikan dengan isi berkas backup yang Anda pilih."
         confirmText="Ya, Pulihkan"
+        isDestructive={false}
+        subtitle="Pastikan berkas backup berasal dari sumber yang tepercaya."
       />
 
       {/* Warm Closing Section with Cute Pet Illustration */}

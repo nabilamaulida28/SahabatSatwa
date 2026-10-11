@@ -95,9 +95,9 @@ function DashboardPage() {
   const healthSummary = `${totalHealth} catatan tersimpan`
 
   // Upcoming schedules (sorted)
-  const upcomingSchedules = schedules
-    .filter((s) => s.status !== 'Selesai')
-    .sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime())
+  const upcomingSchedules = (schedules || [])
+    .filter((s) => s && s.status !== 'Selesai')
+    .sort((a, b) => `${a?.date || ''} ${a?.time || ''}`.localeCompare(`${b?.date || ''} ${b?.time || ''}`))
     .slice(0, 4)
 
   // Item yang sudah lewat tanggalnya tapi belum selesai

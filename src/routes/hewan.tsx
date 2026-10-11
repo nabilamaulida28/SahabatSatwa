@@ -32,12 +32,15 @@ function DataHewanPage() {
   const FILTER_TYPES = ['Semua', 'Kucing', 'Anjing', 'Kelinci', 'Hamster', 'Lainnya']
 
   const filteredPets = useMemo(() => {
-    return pets.filter((pet) => {
+    const q = (searchQuery || '').toLowerCase().trim()
+    return (pets || []).filter((pet) => {
+      if (!pet) return false
       const matchType = selectedType === 'Semua' || pet.type === selectedType
       const matchSearch =
-        pet.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        pet.breed.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (pet.notes && pet.notes.toLowerCase().includes(searchQuery.toLowerCase()))
+        !q ||
+        (pet.name || '').toLowerCase().includes(q) ||
+        (pet.breed || '').toLowerCase().includes(q) ||
+        (pet.notes ? pet.notes.toLowerCase().includes(q) : false)
       return matchType && matchSearch
     })
   }, [pets, selectedType, searchQuery])
