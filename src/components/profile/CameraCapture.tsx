@@ -8,6 +8,7 @@ interface CameraCaptureProps {
 
 export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onCancel }) => {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
   const [stream, setStream] = useState<MediaStream | null>(null)
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
   const [cameraError, setCameraError] = useState<string | null>(null)
@@ -17,11 +18,12 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onCance
 
   // Stop camera tracks cleanly
   const stopStream = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop())
-      setStream(null)
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop())
+      streamRef.current = null
     }
-  }, [stream])
+    setStream(null)
+  }, [])
 
   // Check if device has multiple cameras (front/back)
   useEffect(() => {
@@ -41,8 +43,9 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onCance
     setCameraError(null)
 
     // Stop existing stream first
-    if (stream) {
-      stream.getTracks().forEach((t) => t.stop())
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop())
+      streamRef.current = null
     }
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -61,6 +64,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onCance
         audio: false,
       })
 
+      streamRef.current = newStream
       setStream(newStream)
       if (videoRef.current) {
         videoRef.current.srcObject = newStream
@@ -78,17 +82,18 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onCance
         setCameraError(`Gagal mengakses kamera: ${err.message || 'Periksa koneksi webcam Anda.'}`)
       }
     }
-  }, [stream])
+  }, [])
 
   useEffect(() => {
     startCamera(facingMode)
     return () => {
       // Cleanup stream on unmount
-      if (stream) {
-        stream.getTracks().forEach((t) => t.stop())
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop())
+        streamRef.current = null
       }
     }
-  }, [facingMode])
+  }, [facingMode, startCamera])
 
   // Capture current frame from video to canvas
   const handleTakePhoto = () => {

@@ -12,22 +12,31 @@ export function todayStr(): string {
 }
 
 export function parseDate(dateStr: string): Date {
-  const [y, m, d] = dateStr.split('-').map(Number)
-  return new Date(y, (m || 1) - 1, d || 1)
+  if (!dateStr || typeof dateStr !== 'string') return new Date()
+  const clean = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr.trim()
+  const parts = clean.split('-').map(Number)
+  const y = parts[0] || new Date().getFullYear()
+  const m = parts[1] || 1
+  const d = parts[2] || 1
+  return new Date(y, m - 1, d)
 }
 
 export function daysBetween(fromStr: string, toStr: string): number {
+  if (!fromStr || !toStr) return 0
   const ms = parseDate(toStr).getTime() - parseDate(fromStr).getTime()
+  if (isNaN(ms)) return 0
   return Math.round(ms / 86_400_000)
 }
 
 export function addDays(dateStr: string, days: number): string {
+  if (!dateStr) return todayStr()
   const d = parseDate(dateStr)
   d.setDate(d.getDate() + days)
   return toDateStr(d)
 }
 
 export function addMonths(dateStr: string, months: number): string {
+  if (!dateStr) return todayStr()
   const d = parseDate(dateStr)
   const day = d.getDate()
   d.setDate(1)
@@ -44,13 +53,16 @@ export const monthName = (monthIndex: number) => MONTHS_LONG[monthIndex]
 
 /** 2026-10-10 -> "10 Okt 2026" */
 export function formatDate(dateStr: string): string {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr
-  const d = parseDate(dateStr)
+  if (!dateStr || typeof dateStr !== 'string') return ''
+  const clean = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr.trim()
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(clean)) return dateStr
+  const d = parseDate(clean)
   return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()}`
 }
 
 /** "Hari ini", "Besok", "3 hari lagi", "2 hari lalu", atau tanggal bila jauh. */
 export function relativeLabel(dateStr: string): string {
+  if (!dateStr) return ''
   const diff = daysBetween(todayStr(), dateStr)
   if (diff === 0) return 'Hari ini'
   if (diff === 1) return 'Besok'

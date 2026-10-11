@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react'
-import { Search, X, PawPrint, Calendar, Heart, Bell, ArrowRight } from 'lucide-react'
+import { Search, X, PawPrint, Calendar, Heart, Bell, ArrowRight, ClipboardList } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import { useSatwaStore } from '../../lib/storage'
 import { Modal } from './Modal'
@@ -22,6 +22,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
         pets: pets.slice(0, 3),
         schedules: schedules.slice(0, 2),
         reminders: reminders.slice(0, 2),
+        healthRecords: healthRecords.slice(0, 2),
       }
     }
 
@@ -181,6 +182,42 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
                   <ArrowRight className="w-4 h-4 text-[#718078]" />
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Results for Health Records */}
+        {results.healthRecords && results.healthRecords.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-2 text-xs font-bold text-[#718078] uppercase tracking-wider">
+              <ClipboardList className="w-3.5 h-3.5 text-[#D97706]" />
+              <span>Riwayat Medis ({results.healthRecords.length})</span>
+            </div>
+            <div className="space-y-1.5">
+              {results.healthRecords.map((rec) => {
+                const pet = pets.find((p) => p.id === rec.petId)
+                return (
+                  <div
+                    key={rec.id}
+                    onClick={() => handleSelect('/riwayat')}
+                    className="flex items-center justify-between p-2.5 rounded-xl hover:bg-[#FAF6EF] cursor-pointer transition-colors border border-transparent hover:border-[#E9E4DC]"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-bold text-[#24312C]">{rec.title}</h4>
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-[#FFF1CC] text-[#D97706]">
+                          {rec.vetOrClinic}
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#718078] mt-0.5">
+                        {pet?.name ? `${pet.name} · ` : ''}
+                        {rec.diagnosis || rec.symptoms}
+                      </p>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-[#718078]" />
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}

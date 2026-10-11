@@ -11,6 +11,7 @@ interface ConfirmDialogProps {
   confirmText?: string
   cancelText?: string
   isDestructive?: boolean
+  subtitle?: string
 }
 
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
@@ -22,6 +23,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   confirmText = 'Hapus',
   cancelText = 'Batal',
   isDestructive = true,
+  subtitle,
 }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} maxWidth="max-w-md">
@@ -35,9 +37,13 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         </div>
         <div>
           <p className="text-sm text-[#24312C] leading-relaxed">{message}</p>
-          <p className="text-xs text-[#718078] mt-2">
-            Tindakan ini akan menghapus data dari penyimpanan perangkat Anda.
-          </p>
+          {subtitle ? (
+            <p className="text-xs text-[#718078] mt-2">{subtitle}</p>
+          ) : isDestructive ? (
+            <p className="text-xs text-[#718078] mt-2">
+              Tindakan ini akan menghapus data dari penyimpanan perangkat Anda.
+            </p>
+          ) : null}
         </div>
       </div>
 
